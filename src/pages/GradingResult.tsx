@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User, Score, CriterionScore } from "../types";
-import { MOCK_SCORES, MOCK_INSPECTIONS, MOCK_CONFIG } from "../mockData";
+import { getConfig, getInspection, getScore, sendInspection } from "../api";
 import ScoreRing from "../components/ScoreRing";
 import Layout from "../components/Layout";
 
@@ -119,11 +119,18 @@ export default function GradingResult({
   onBackToInspection,
   onSendSuccess,
 }: Props) {
-  const score: Score | undefined = MOCK_SCORES[videoId];
-  const inspection = MOCK_INSPECTIONS.find((i) => i.id === inspectionId);
-  const config = MOCK_CONFIG;
+  const [score, setScore] = useState<Score>();
+  const [inspection, setInspection] = useState<import("../types").Inspection>();
+  const [config, setConfig] = useState({ grading_threshold_percent: 80, max_upload_bytes: 0, max_upload_mb: 0, accepted_video_types: [] as string[] });
+  const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    Promise.all([getScore(videoId), getInspection(inspectionId), getConfig()])
+      .then(([result, item, cfg]) => { setScore(result); setInspection(item); setConfig(cfg); })
+      .catch(e => setError(e instanceof Error ? e.message : "Unable to load score"));
+  }, [inspectionId, videoId]);
 
   if (!score || !inspection) {
     return (
@@ -135,7 +142,7 @@ export default function GradingResult({
         breadcrumb={[{ label: "Inspections", onClick: () => onNavigate("dashboard") }, { label: "Score" }]}
       >
         <div className="flex items-center justify-center h-64">
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Score data unavailable.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{error || "Loading grading result…"}</p>
         </div>
       </Layout>
     );
@@ -143,14 +150,12 @@ export default function GradingResult({
 
   const isPassing = score.overall_score >= score.threshold_percent;
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!score.can_send) return;
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
-      setSent(true);
-      setTimeout(onSendSuccess, 1800);
-    }, 1200);
+    try { await sendInspection(inspectionId, videoId); setSent(true); window.setTimeout(onSendSuccess, 1800); }
+    catch (e) { setError(e instanceof Error ? e.message : "Unable to send video"); }
+    finally { setSending(false); }
   };
 
   return (

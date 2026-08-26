@@ -1,22 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "./types";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import InspectionDetail from "./pages/InspectionDetail";
 import GradingResult from "./pages/GradingResult";
 import Analytics from "./pages/Analytics";
-import { clearSession } from "./api";
+import Settings from "./pages/Settings";
+import { clearSession, getMe, hasSession } from "./api";
 
 type Page =
   | { name: "login" }
   | { name: "dashboard" }
   | { name: "inspection"; inspectionId: string }
   | { name: "grading"; inspectionId: string; videoId: string }
-  | { name: "analytics" };
+  | { name: "analytics" }
+  | { name: "settings" };
 
 export default function App() {
   const [page, setPage] = useState<Page>({ name: "login" });
   const [user, setUser] = useState<User | null>(null);
+  const [restoring, setRestoring] = useState(hasSession());
+
+  useEffect(() => {
+    if (!hasSession()) return;
+    getMe().then((account) => { setUser(account); setPage({ name: "dashboard" }); })
+      .catch(clearSession).finally(() => setRestoring(false));
+  }, []);
 
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
@@ -32,8 +41,10 @@ export default function App() {
   const navigate = (target: string) => {
     if (target === "dashboard") setPage({ name: "dashboard" });
     else if (target === "analytics") setPage({ name: "analytics" });
+    else if (target === "settings") setPage({ name: "settings" });
   };
 
+  if (restoring) return <div className="h-full flex items-center justify-center">Restoring session…</div>;
   if (!user || page.name === "login") {
     return <Login onLogin={handleLogin} />;
   }
@@ -85,6 +96,16 @@ export default function App() {
   if (page.name === "analytics") {
     return (
       <Analytics
+        user={user}
+        onNavigate={navigate}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (page.name === "settings" && user.role === "admin") {
+    return (
+      <Settings
         user={user}
         onNavigate={navigate}
         onLogout={handleLogout}

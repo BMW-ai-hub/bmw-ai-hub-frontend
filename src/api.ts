@@ -1,0 +1,74 @@
+import type { Config, Inspection, PersonalAnalytics, Score, TeamAnalytics, User, Video } from "./types";
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
+const ACCESS = "bmw_access_token";
+const REFRESH = "bmw_refresh_token";
+
+type Tokens = { access_token: string; refresh_token: string; expires_in: number };
+type BCustomer = { id: string; name: string | null; email: string | null; phone: string | null };
+type BVehicle = { id: string; vin: string | null; model: string | null; year: number | null; customer: BCustomer | null };
+type BVideo = { id: string; inspection_id: string; status: Video["status"]; uploaded_at: string; filename?: string | null; can_send: boolean; overall_score?: number | null };
+type BInspection = { id: string; technician_id: string | null; status: Inspection["status"]; service_type: string | null; created_at: string; updated_at: string | null; vehicle: BVehicle | null; latest_score: number | null; latest_video_id: string | null; attempt_count: number; can_send: boolean; videos?: BVideo[]; history?: Array<{ created_at: string; service_type: string | null; notes: string | null; final_score: number | null }> };
+
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
+function message(body: unknown, fallback: string) {
+  if (body && typeof body === "object" && "error" in body) {
+    return (body as { error?: { message?: string } }).error?.message ?? fallback;
+  }
+  return fallback;
+}
+
+async function renew() {
+  const refresh_token = localStorage.getItem(REFRESH);
+  if (!refresh_token) return false;
+  const response = await fetch(`${API_BASE}/auth/refresh`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token }) });
+  if (!response.ok) { clearSession(); return false; }
+  const tokens = await response.json() as Tokens;
+  localStorage.setItem(ACCESS, tokens.access_token);
+  localStorage.setItem(REFRESH, tokens.refresh_token);
+  return true;
+}
+
+async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+  const headers = new Headers(init.headers);
+  const token = localStorage.getItem(ACCESS);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
+  const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  if (response.status === 401 && retry && await renew()) return request<T>(path, init, false);
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new ApiError(message(body, `Request failed (${response.status})`), response.status);
+  return body as T;
+}
+
+function toUser(u: { id: string; email: string; name: string; role: User["role"]; dealer_id: string | null }): User {
+  return { id: u.id, email: u.email, name: u.name, role: u.role, dealership: u.dealer_id ? "BMW of Lahore" : "BMW Technician Network" };
+}
+
+function toInspection(i: BInspection): Inspection {
+  const customer: Inspection["customer"] = { id: i.vehicle?.customer?.id ?? "unknown", name: i.vehicle?.customer?.name ?? "Not available", email: i.vehicle?.customer?.email ?? "", phone: i.vehicle?.customer?.phone ?? "" };
+  return { id: i.id, technician_id: i.technician_id ?? "", status: i.status, service_type: i.service_type ?? "General inspection", created_at: i.created_at, updated_at: i.updated_at ?? i.created_at, can_send: i.can_send, latest_score: i.latest_score ?? undefined, latest_video_id: i.latest_video_id ?? undefined, attempt_count: i.attempt_count, customer, vehicle: { id: i.vehicle?.id ?? "unknown", make: "BMW", model: i.vehicle?.model ?? "Vehicle", year: i.vehicle?.year ?? new Date().getFullYear(), vin: i.vehicle?.vin ?? "Not available", color: "Not available", mileage: 0, customer }, service_history: (i.history ?? []).map(h => ({ date: h.created_at, service_type: h.service_type ?? "Inspection", technician: "BMW Technician", notes: h.notes ?? (h.final_score == null ? "" : `Final score: ${h.final_score}%`), mileage: 0 })) };
+}
+
+export async function login(email: string, password: string) {
+  const tokens = await request<Tokens>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+  localStorage.setItem(ACCESS, tokens.access_token); localStorage.setItem(REFRESH, tokens.refresh_token);
+  return getMe();
+}
+export const getMe = async () => toUser(await request<{ id: string; email: string; name: string; role: User["role"]; dealer_id: string | null }>("/auth/me"));
+export function hasSession() { return Boolean(localStorage.getItem(ACCESS) || localStorage.getItem(REFRESH)); }
+export function clearSession() { localStorage.removeItem(ACCESS); localStorage.removeItem(REFRESH); }
+
+export async function getInspections(technicianId?: string) { const q = technicianId ? `?technician_id=${encodeURIComponent(technicianId)}&limit=100` : "?limit=100"; return (await request<{ items: BInspection[] }>(`/inspections${q}`)).items.map(toInspection); }
+export async function getInspection(id: string) { return toInspection(await request<BInspection>(`/inspections/${id}`)); }
+export async function getInspectionVideos(id: string) { return (await request<BVideo[]>(`/inspections/${id}/videos`)).map(v => ({ ...v, overall_score: v.overall_score ?? undefined, filename: v.filename ?? `Attempt ${v.id.slice(0, 8)}` })); }
+export async function uploadVideo(id: string, file: File, serviceType: string) { const data = new FormData(); data.append("file", file); data.append("service_type", serviceType); return request<BVideo>(`/inspections/${id}/videos`, { method: "POST", body: data }); }
+export const getVideo = (id: string) => request<BVideo & { grading_error?: string | null }>(`/videos/${id}`);
+export async function getScore(id: string): Promise<Score> { const s = await request<{ video_id: string; inspection_id: string; overall_score: number | null; threshold_percent: number; can_send: boolean; feedback: string | null; criteria: Array<{ criterion: string; label: string | null; score: number; passed: boolean | null; guidance: string | null }> }>(`/videos/${id}/score`); return { video_id: s.video_id, inspection_id: s.inspection_id, overall_score: s.overall_score ?? 0, threshold_percent: s.threshold_percent, can_send: s.can_send, feedback: s.feedback ?? "Grading is still in progress.", criteria: s.criteria.map(c => ({ key: c.criterion, display_name: c.label ?? c.criterion.replace(/_/g, " "), score: c.score, passed: c.passed, guidance: c.guidance })) }; }
+export const sendInspection = (inspectionId: string, videoId?: string) => request(`/inspections/${inspectionId}/send${videoId ? `?video_id=${encodeURIComponent(videoId)}` : ""}`, { method: "POST" });
+export async function getConfig(): Promise<Config> { const c = await request<{ grading_threshold_percent: number; max_video_bytes: number; allowed_video_types: string[] }>("/config"); return { grading_threshold_percent: c.grading_threshold_percent, max_upload_bytes: c.max_video_bytes, max_upload_mb: Math.round(c.max_video_bytes / 1024 / 1024), accepted_video_types: c.allowed_video_types }; }
+export async function getPersonalAnalytics(user: User, technicianId?: string): Promise<PersonalAnalytics> { const q = technicianId ? `?technician_id=${encodeURIComponent(technicianId)}` : ""; const d = await request<{ technician_id: string; videos_graded: number; average_score: number | null; first_attempt_pass_rate: number | null; trend: Array<{ period: string; average_score: number | null }> }>(`/analytics${q}`); return { technician_id: d.technician_id, technician_name: user.name, first_attempt_pass_rate: d.first_attempt_pass_rate ?? 0, average_score: d.average_score ?? 0, total_videos: d.videos_graded, total_passed: Math.round(d.videos_graded * (d.first_attempt_pass_rate ?? 0) / 100), score_trend: d.trend.map((p, n) => ({ date: p.period, score: p.average_score ?? 0, passed: (p.average_score ?? 0) >= 80, inspection_id: `trend-${n}` })) }; }
+export async function getTeamAnalytics(): Promise<TeamAnalytics> { const d = await request<{ technician_count: number; average_score: number | null; first_attempt_pass_rate: number | null; per_technician: Array<{ technician_id: string; name: string | null; videos_graded: number; average_score: number | null; first_attempt_pass_rate: number | null }> }>("/analytics/team"); return { dealership: "BMW of Lahore", overall_pass_rate: d.first_attempt_pass_rate ?? 0, overall_average_score: d.average_score ?? 0, members: d.per_technician.map(t => ({ technician_id: t.technician_id, technician_name: t.name ?? "Technician", first_attempt_pass_rate: t.first_attempt_pass_rate ?? 0, average_score: t.average_score ?? 0, total_videos: t.videos_graded })) }; }

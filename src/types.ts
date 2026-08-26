@@ -58,6 +58,7 @@ export interface Video {
   uploaded_at: string;
   filename: string;
   can_send: boolean;
+  overall_score?: number;
   duration_seconds?: number;
 }
 
