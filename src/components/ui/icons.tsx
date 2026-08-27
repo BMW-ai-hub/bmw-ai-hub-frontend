@@ -150,6 +150,8 @@ export const IconLogout = glyph(
   </>,
 );
 
+export const IconPlay = glyph(<path d="M7.5 5.5v13l11-6.5z" fill="currentColor" stroke="none" />, 0);
+
 export const IconImage = glyph(
   <>
     <rect x="3" y="4.5" width="18" height="15" rx="2" />

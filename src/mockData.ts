@@ -1,4 +1,30 @@
-import type { Inspection, Video, Score, Config, PersonalAnalytics, TeamAnalytics, User } from "./types";
+import type { Inspection, Video, Score, Config, PersonalAnalytics, TeamAnalytics, User, VideoAnalysisStats, VideoTimelineEntry, CriterionDetail, EvidenceItem, CustomerPreviewItem } from "./types";
+
+// Temporary stock photography — see src/assets/IMAGE_CREDITS.md. Swap these
+// files for BMW-approved assets when available; nothing else needs to change.
+import workshopWide from "./assets/photos/workshop-wide.jpg";
+import workshopBay from "./assets/photos/workshop-bay.jpg";
+import technicianInspecting from "./assets/photos/technician-inspecting.jpg";
+import technicianEngine from "./assets/photos/technician-engine.jpg";
+import engineBay from "./assets/photos/engine-bay.jpg";
+import underbodyLift from "./assets/photos/underbody-lift.jpg";
+import tireTread from "./assets/photos/tire-tread.jpg";
+import brakePad from "./assets/photos/brake-pad.jpg";
+import mobileRecording from "./assets/photos/mobile-recording.jpg";
+import keyHandoff from "./assets/photos/key-handoff.jpg";
+
+export const PHOTOS = {
+  workshopWide,
+  workshopBay,
+  technicianInspecting,
+  technicianEngine,
+  engineBay,
+  underbodyLift,
+  tireTread,
+  brakePad,
+  mobileRecording,
+  keyHandoff,
+};
 
 export const MOCK_USERS: User[] = [
   {
@@ -34,6 +60,7 @@ export const MOCK_CONFIG: Config = {
 export const MOCK_INSPECTIONS: Inspection[] = [
   {
     id: "44444444-4444-4444-4444-444444444441",
+    thumbnail: PHOTOS.technicianInspecting,
     status: "queued",
     service_type: "Annual Service A",
     created_at: "2026-08-26T08:15:00Z",
@@ -74,6 +101,7 @@ export const MOCK_INSPECTIONS: Inspection[] = [
   },
   {
     id: "44444444-4444-4444-4444-444444444442",
+    thumbnail: PHOTOS.underbodyLift,
     status: "needs_revision",
     service_type: "Brake Inspection + DSC Check",
     created_at: "2026-08-25T10:30:00Z",
@@ -123,6 +151,7 @@ export const MOCK_INSPECTIONS: Inspection[] = [
   },
   {
     id: "44444444-4444-4444-4444-444444444443",
+    thumbnail: PHOTOS.workshopBay,
     status: "passed",
     service_type: "CPO Pre-Sale Inspection",
     created_at: "2026-08-24T09:00:00Z",
@@ -179,6 +208,7 @@ export const MOCK_INSPECTIONS: Inspection[] = [
   },
   {
     id: "44444444-4444-4444-4444-444444444444",
+    thumbnail: PHOTOS.keyHandoff,
     status: "sent",
     service_type: "Annual Service B",
     created_at: "2026-08-23T11:00:00Z",
@@ -213,6 +243,7 @@ export const MOCK_INSPECTIONS: Inspection[] = [
   },
   {
     id: "44444444-4444-4444-4444-444444444445",
+    thumbnail: PHOTOS.technicianEngine,
     status: "in_progress",
     service_type: "Wheel Assembly & Tyre Check",
     created_at: "2026-08-26T09:45:00Z",
@@ -239,6 +270,176 @@ export const MOCK_INSPECTIONS: Inspection[] = [
         name: "Usman Farooq",
         email: "usman.f@email.com",
         phone: "+92-312-1112223",
+      },
+    },
+    service_history: [],
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444446",
+    thumbnail: PHOTOS.workshopWide,
+    status: "passed",
+    service_type: "Annual Service",
+    created_at: "2026-08-27T09:10:00Z",
+    updated_at: "2026-08-27T09:10:00Z",
+    technician_id: "11111111-1111-1111-1111-111111111111",
+    can_send: true,
+    latest_score: 88,
+    attempt_count: 1,
+    customer: {
+      id: "cc666666-0000-0000-0000-000000000006",
+      name: "Fahad Rashid",
+      email: "fahad.rashid@email.com",
+      phone: "+92-301-2223344",
+    },
+    vehicle: {
+      id: "vv666666-0000-0000-0000-000000000006",
+      make: "BMW",
+      model: "i4 eDrive40 (G26)",
+      year: 2024,
+      vin: "WBY63AW07RFH67890",
+      color: "Portimao Blue Metallic",
+      mileage: 9840,
+      customer: {
+        id: "cc666666-0000-0000-0000-000000000006",
+        name: "Fahad Rashid",
+        email: "fahad.rashid@email.com",
+        phone: "+92-301-2223344",
+      },
+    },
+    service_history: [],
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444447",
+    thumbnail: PHOTOS.workshopWide,
+    status: "needs_revision",
+    service_type: "Brake Inspection",
+    created_at: "2026-08-18T11:30:00Z",
+    updated_at: "2026-08-18T11:30:00Z",
+    technician_id: "11111111-1111-1111-1111-111111111111",
+    can_send: false,
+    latest_score: 76,
+    attempt_count: 1,
+    customer: {
+      id: "cc777777-0000-0000-0000-000000000007",
+      name: "Mehreen Aslam",
+      email: "mehreen.aslam@email.com",
+      phone: "+92-302-3334455",
+    },
+    vehicle: {
+      id: "vv777777-0000-0000-0000-000000000007",
+      make: "BMW",
+      model: "X5 xDrive40i (G05)",
+      year: 2023,
+      vin: "5UXCR6C05P9L34567",
+      color: "Skyscraper Grey",
+      mileage: 22140,
+      customer: {
+        id: "cc777777-0000-0000-0000-000000000007",
+        name: "Mehreen Aslam",
+        email: "mehreen.aslam@email.com",
+        phone: "+92-302-3334455",
+      },
+    },
+    service_history: [],
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444448",
+    thumbnail: PHOTOS.technicianInspecting,
+    status: "passed",
+    service_type: "Multi-point Inspection",
+    created_at: "2026-08-11T08:45:00Z",
+    updated_at: "2026-08-11T08:45:00Z",
+    technician_id: "11111111-1111-1111-1111-111111111111",
+    can_send: true,
+    latest_score: 94,
+    attempt_count: 1,
+    customer: {
+      id: "cc888888-0000-0000-0000-000000000008",
+      name: "Imran Sheikh",
+      email: "imran.sheikh@email.com",
+      phone: "+92-303-4445566",
+    },
+    vehicle: {
+      id: "vv888888-0000-0000-0000-000000000008",
+      make: "BMW",
+      model: "3 Series (G20)",
+      year: 2025,
+      vin: "WBA8E9G59SNU78901",
+      color: "Alpine White",
+      mileage: 3120,
+      customer: {
+        id: "cc888888-0000-0000-0000-000000000008",
+        name: "Imran Sheikh",
+        email: "imran.sheikh@email.com",
+        phone: "+92-303-4445566",
+      },
+    },
+    service_history: [],
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444449",
+    thumbnail: PHOTOS.underbodyLift,
+    status: "passed",
+    service_type: "Tire & Suspension Inspection",
+    created_at: "2026-07-29T13:20:00Z",
+    updated_at: "2026-07-29T13:20:00Z",
+    technician_id: "11111111-1111-1111-1111-111111111111",
+    can_send: true,
+    latest_score: 81,
+    attempt_count: 1,
+    customer: {
+      id: "cc999999-0000-0000-0000-000000000009",
+      name: "Sana Malik",
+      email: "sana.malik@email.com",
+      phone: "+92-304-5556677",
+    },
+    vehicle: {
+      id: "vv999999-0000-0000-0000-000000000009",
+      make: "BMW",
+      model: "X3 xDrive30i (G01)",
+      year: 2022,
+      vin: "5UXTY5C05N9M45678",
+      color: "Black Sapphire Metallic",
+      mileage: 27350,
+      customer: {
+        id: "cc999999-0000-0000-0000-000000000009",
+        name: "Sana Malik",
+        email: "sana.malik@email.com",
+        phone: "+92-304-5556677",
+      },
+    },
+    service_history: [],
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444450",
+    thumbnail: PHOTOS.technicianEngine,
+    status: "needs_revision",
+    service_type: "Annual Service",
+    created_at: "2026-07-19T10:05:00Z",
+    updated_at: "2026-07-19T10:05:00Z",
+    technician_id: "11111111-1111-1111-1111-111111111111",
+    can_send: false,
+    latest_score: 72,
+    attempt_count: 1,
+    customer: {
+      id: "cc101010-0000-0000-0000-000000000010",
+      name: "Waqas Anjum",
+      email: "waqas.anjum@email.com",
+      phone: "+92-305-6667788",
+    },
+    vehicle: {
+      id: "vv101010-0000-0000-0000-000000000010",
+      make: "BMW",
+      model: "5 Series (G60)",
+      year: 2024,
+      vin: "WBA5E7C58KD901234",
+      color: "Mineral White Metallic",
+      mileage: 11760,
+      customer: {
+        id: "cc101010-0000-0000-0000-000000000010",
+        name: "Waqas Anjum",
+        email: "waqas.anjum@email.com",
+        phone: "+92-305-6667788",
       },
     },
     service_history: [],
@@ -531,3 +732,112 @@ export const MOCK_TEAM_ANALYTICS: TeamAnalytics = {
     { technician_id: "5", technician_name: "Kamran Shahid", first_attempt_pass_rate: 70, average_score: 78, total_videos: 12 },
   ],
 };
+
+/* ── Grading-result video intelligence (demo content) ─────────────────── */
+
+export const MOCK_VIDEO_ANALYSIS: VideoAnalysisStats = {
+  duration_seconds: 162,
+  analysis_status: "Complete",
+  strengths: 5,
+  areas_to_improve: 2,
+};
+
+export const MOCK_VIDEO_OVERVIEW =
+  "The technician completed a structured multi-point inspection covering tires, brakes, suspension, drivetrain and the engine bay. Measurements were generally shown clearly on camera. The strongest areas were completeness and visual evidence, while terminology and closing brand language could be improved.";
+
+export const MOCK_VIDEO_TIMELINE: VideoTimelineEntry[] = [
+  {
+    start_seconds: 0,
+    end_seconds: 16,
+    title: "Introduction",
+    description: "Technician introduces himself, the vehicle and scheduled service.",
+    tags: ["Tone"],
+    meets_expectation: true,
+  },
+  {
+    start_seconds: 17,
+    end_seconds: 44,
+    title: "Rear tires & brakes",
+    description: "Tread depth and brake-pad measurements are shown clearly.",
+    tags: ["Completeness", "Finding shown"],
+    meets_expectation: true,
+  },
+  {
+    start_seconds: 45,
+    end_seconds: 85,
+    title: "Suspension & drivetrain",
+    description: "Rear suspension, differential, transmission and underbody inspected.",
+    tags: ["Completeness", "Terminology"],
+    meets_expectation: false,
+  },
+  {
+    start_seconds: 86,
+    end_seconds: 109,
+    title: "Front tires & brakes",
+    description: "Front tire measurements and brake condition documented.",
+    tags: ["Finding shown"],
+    meets_expectation: true,
+  },
+  {
+    start_seconds: 110,
+    end_seconds: 145,
+    title: "Engine bay",
+    description: "Coolant, belts, hoses and fluid condition checked.",
+    tags: ["Completeness", "Finding shown"],
+    meets_expectation: true,
+  },
+  {
+    start_seconds: 146,
+    end_seconds: 162,
+    title: "Closing",
+    description: "Service completion explained and customer thanked.",
+    tags: ["Tone"],
+    meets_expectation: true,
+  },
+];
+
+/**
+ * Keyed by CriterionScore.key. Supplements the real `guidance` text (which
+ * already covers "why") with the two things the grading payload doesn't
+ * carry yet: a concrete next step and, where applicable, timeline evidence.
+ */
+export const CRITERION_DETAILS: Record<string, CriterionDetail> = {
+  completeness: {
+    to_reach_100: "Explicitly confirm every required inspection checkpoint before moving to the next section.",
+    evidence: ["00:17–00:44", "00:45–01:25", "01:50–02:25"],
+  },
+  accuracy_of_terminology: {
+    to_reach_100: "Use the approved component terminology consistently throughout the walkthrough.",
+    evidence: ["00:45–01:25"],
+  },
+  clear_finding_shown: {
+    to_reach_100: "Improve camera positioning for components that are difficult to see.",
+    evidence: ["00:17–00:44", "01:50–02:25"],
+  },
+  explanation_of_impact: {
+    to_reach_100: "Briefly explain why each significant finding matters to vehicle performance or safety.",
+  },
+  recommendation_clarity: {
+    to_reach_100: "Clearly distinguish between replace now, monitor and no-action-required recommendations.",
+  },
+  tone_and_professionalism: {
+    to_reach_100: "Use the complete approved introduction and closing sequence consistently.",
+  },
+  brand_voice_compliance: {
+    to_reach_100: "Use approved BMW greeting, service explanation and closing language consistently.",
+  },
+};
+
+export const MOCK_EVIDENCE: EvidenceItem[] = [
+  { image: PHOTOS.tireTread, label: "Tire tread", timestamp_seconds: 31 },
+  { image: PHOTOS.brakePad, label: "Rear brake pads", timestamp_seconds: 39 },
+  { image: PHOTOS.underbodyLift, label: "Underbody inspection", timestamp_seconds: 64 },
+  { image: PHOTOS.engineBay, label: "Engine coolant", timestamp_seconds: 123 },
+];
+
+export const MOCK_CUSTOMER_PREVIEW: CustomerPreviewItem[] = [
+  { label: "Video walkthrough", detail: "The full walkaround, trimmed to the moments that matter." },
+  { label: "Key findings", detail: "Plain-language summary of what was checked and what was found." },
+  { label: "Recommended actions", detail: "Replace, monitor, or no action needed — stated clearly." },
+  { label: "Technician explanation", detail: "Why it matters, in the technician's own words." },
+];

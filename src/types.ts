@@ -49,6 +49,8 @@ export interface Inspection {
   latest_video_id?: string;
   attempt_count: number;
   service_history: ServiceHistoryEntry[];
+  /** Local asset path for the past-inspections list — presentation only, not from the API. */
+  thumbnail?: string;
 }
 
 export interface Video {
@@ -117,4 +119,43 @@ export interface TeamAnalytics {
   overall_pass_rate: number;
   overall_average_score: number;
   members: TeamMemberStat[];
+}
+
+export interface VideoAnalysisStats {
+  duration_seconds: number;
+  analysis_status: string;
+  strengths: number;
+  areas_to_improve: number;
+}
+
+/** Seconds rather than formatted strings — ready to drive a real video player's currentTime later. */
+export interface VideoTimelineEntry {
+  start_seconds: number;
+  end_seconds: number;
+  title: string;
+  description: string;
+  tags: string[];
+  meets_expectation: boolean;
+}
+
+export interface CriterionDetail {
+  to_reach_100: string;
+  evidence?: string[];
+}
+
+/**
+ * A still frame pulled from the walkaround video, tied to a moment in the
+ * timeline. `image` is left unset until a real extracted frame (or an
+ * approved BMW asset) is available — the gallery renders a neutral
+ * placeholder in the meantime rather than an unofficial stock photo.
+ */
+export interface EvidenceItem {
+  image?: string;
+  label: string;
+  timestamp_seconds: number;
+}
+
+export interface CustomerPreviewItem {
+  label: string;
+  detail: string;
 }

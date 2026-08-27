@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Inspection, InspectionStatus, User } from '../types';
 import { getInspections } from '../api';
 import { AppShell } from '../components/AppShell';
+import { DashboardHero } from '../components/dashboard/DashboardHero';
+import { PastInspectionCard } from '../components/dashboard/PastInspectionCard';
 import { StatusChip } from '../components/ui/Chip';
 import { SearchField, SelectField } from '../components/ui/Controls';
 import { DataTable, type Column } from '../components/ui/DataTable';
 import { Meter } from '../components/ui/Metrics';
-import { EmptyState, Notice } from '../components/ui/Panel';
+import { EmptyState, Notice, Panel } from '../components/ui/Panel';
 import { PageHeading } from '../components/ui/PageHeading';
 import { IconImage, IconInspections } from '../components/ui/icons';
 
@@ -31,9 +33,15 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
 /** Inline summary strip — hairline-divided rather than a row of boxes. */
-function SummaryStrip({ items }: { items: readonly { label: string; value: number; tone: string }[] }) {
+function SummaryStrip({
+  items,
+  className = '',
+}: {
+  items: readonly { label: string; value: number; tone: string }[];
+  className?: string;
+}) {
   return (
-    <dl className="grid grid-cols-2 divide-line rounded-lg border border-line sm:grid-cols-4 sm:divide-x">
+    <dl className={`grid grid-cols-2 divide-line rounded-lg border border-line sm:grid-cols-4 sm:divide-x ${className}`}>
       {items.map((item) => (
         <div key={item.label} className="px-5 py-4">
           <dt className="eyebrow">{item.label}</dt>
@@ -140,6 +148,15 @@ export default function Dashboard({ user, onNavigate, onOpenInspection, onLogout
 
   const needsRevision = counts.needs_revision ?? 0;
 
+  /** Completed/historical work — distinct from the queue table above, which still shows every status. */
+  const pastInspections = useMemo(
+    () =>
+      scoped
+        .filter((item) => item.status === 'passed' || item.status === 'sent')
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+    [scoped],
+  );
+
   const columns: readonly Column<Inspection>[] = useMemo(
     () => [
       {
@@ -222,100 +239,142 @@ export default function Dashboard({ user, onNavigate, onOpenInspection, onLogout
       onLogout={onLogout}
       breadcrumb={[{ label: 'Inspections' }]}
     >
-      <div className="space-y-7">
-        <PageHeading
-          title={isManager ? 'All Inspections' : 'My Queue'}
-          count={scoped.length}
-          description={
-            isManager
-              ? 'Every walkaround video across the dealership, graded against the BMW rubric.'
-              : 'Walkaround videos assigned to you, graded against the BMW rubric.'
-          }
-          actions={
-            <>
-              {isManager && (
-                <SelectField
-                  aria-label="Filter by technician"
-                  value={techFilter}
-                  onChange={(event) => setTechFilter(event.target.value)}
-                  className="w-52"
-                >
-                  <option value="all">All technicians</option>
-                  {technicians.map((technician) => (
-                    <option key={technician.id} value={technician.id}>
-                      {technician.name}
-                    </option>
-                  ))}
-                </SelectField>
-              )}
-              <SearchField
-                label="Search inspections"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="w-full sm:w-64"
-              />
-            </>
-          }
-        />
+      <div>
+        <div className="space-y-7">
+          <DashboardHero name={user.name} />
 
-        {error && <Notice tone="fail" title="Could not load inspections">{error}</Notice>}
+          {error && <Notice tone="fail" title="Could not load inspections">{error}</Notice>}
 
-        {needsRevision > 0 && (
-          <Notice tone="fail" title={`${needsRevision} blocked by video quality`}>
-            {needsRevision === 1 ? 'One walkaround scored' : 'These walkarounds scored'} below the
-            80% threshold and cannot be sent until re-recorded.
-          </Notice>
-        )}
-
-        <SummaryStrip
-          items={[
-            { label: 'Total', value: counts.all ?? 0, tone: 'text-ink' },
-            { label: 'Needs Revision', value: needsRevision, tone: 'text-fail' },
-            { label: 'Ready to Send', value: counts.passed ?? 0, tone: 'text-pass' },
-            { label: 'Sent', value: counts.sent ?? 0, tone: 'text-ink-400' },
-          ]}
-        />
-
-        <FilterChips active={statusFilter} counts={counts} onSelect={setStatusFilter} />
-
-        <DataTable
-          columns={columns}
-          rows={rows}
-          rowKey={(row) => row.id}
-          query={search}
-          filterRow
-          paginate
-          minWidth={1140}
-          leading={{
-            header: <IconImage size={18} />,
-            render: () => (
-              <span className="flex size-10 items-center justify-center rounded-sm bg-well text-ink-300">
-                <IconImage size={18} />
-              </span>
-            ),
-          }}
-          rowActions={(row) => [
-            { label: 'Open inspection', onSelect: () => onOpenInspection(row.id) },
-            {
-              label: 'Copy VIN',
-              onSelect: () => void navigator.clipboard?.writeText(row.vehicle.vin),
-            },
-          ]}
-          onRowClick={(row) => onOpenInspection(row.id)}
-          empty={
-            <EmptyState
-              icon={<IconInspections size={34} />}
-              title={loading ? 'Loading inspections…' : 'Nothing to show'}
-              hint={
-                loading
-                  ? undefined
-                  : statusFilter !== 'all' || search
-                    ? 'No inspection matches the current filters.'
-                    : 'No inspections are assigned yet.'
-              }
+          <section>
+            <h2 className="font-display text-heading">Today's work</h2>
+            <SummaryStrip
+              items={[
+                { label: 'Queued', value: counts.queued ?? 0, tone: 'text-ink' },
+                { label: 'In Progress', value: counts.in_progress ?? 0, tone: 'text-warn' },
+                { label: 'Ready for Customer', value: counts.passed ?? 0, tone: 'text-pass' },
+                { label: 'Needs Revision', value: needsRevision, tone: 'text-fail' },
+              ]}
+              className="mt-3"
             />
-          }
-        />
+          </section>
+        </div>
+
+        {/* ── My Queue ──────────────────────────────────────────────── */}
+        <section className="mt-6 space-y-5 sm:mt-9 lg:mt-14">
+          <PageHeading
+            level="title"
+            title={isManager ? 'All Inspections' : 'My Queue'}
+            count={scoped.length}
+            description={
+              isManager
+                ? 'Every walkaround video across the dealership, graded against the BMW rubric.'
+                : 'Walkaround videos assigned to you, graded against the BMW rubric.'
+            }
+            actions={
+              <>
+                {isManager && (
+                  <SelectField
+                    aria-label="Filter by technician"
+                    value={techFilter}
+                    onChange={(event) => setTechFilter(event.target.value)}
+                    className="w-52"
+                  >
+                    <option value="all">All technicians</option>
+                    {technicians.map((technician) => (
+                      <option key={technician.id} value={technician.id}>
+                        {technician.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                )}
+                <SearchField
+                  label="Search inspections"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="w-full sm:w-64"
+                />
+              </>
+            }
+          />
+
+          <FilterChips active={statusFilter} counts={counts} onSelect={setStatusFilter} />
+
+          <DataTable
+            columns={columns}
+            rows={rows}
+            rowKey={(row) => row.id}
+            query={search}
+            filterRow
+            paginate
+            minWidth={1140}
+            leading={{
+              header: <IconImage size={18} />,
+              render: (row) =>
+                row.thumbnail ? (
+                  <img
+                    src={row.thumbnail}
+                    alt=""
+                    className="size-10 rounded-sm object-cover"
+                  />
+                ) : (
+                  <span className="flex size-10 items-center justify-center rounded-sm bg-well text-ink-300">
+                    <IconImage size={18} />
+                  </span>
+                ),
+            }}
+            rowActions={(row) => [
+              { label: 'Open inspection', onSelect: () => onOpenInspection(row.id) },
+              {
+                label: 'Copy VIN',
+                onSelect: () => void navigator.clipboard?.writeText(row.vehicle.vin),
+              },
+            ]}
+            onRowClick={(row) => onOpenInspection(row.id)}
+            empty={
+              <EmptyState
+                icon={<IconInspections size={34} />}
+                title={loading ? 'Loading inspections…' : 'Nothing to show'}
+                hint={
+                  loading
+                    ? undefined
+                    : statusFilter !== 'all' || search
+                      ? 'No inspection matches the current filters.'
+                      : 'No inspections are assigned yet.'
+                }
+              />
+            }
+          />
+        </section>
+
+        {/* ── Past inspections ──────────────────────────────────────── */}
+        <section className="mt-6 sm:mt-9 lg:mt-14">
+          <PageHeading
+            level="title"
+            title="Past inspections"
+            count={pastInspections.length}
+            description="Review previously completed technician inspections and grading results."
+          />
+
+          {pastInspections.length > 0 ? (
+            <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {pastInspections.map((item) => (
+                <PastInspectionCard
+                  key={item.id}
+                  inspection={item}
+                  onView={() => onOpenInspection(item.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Panel className="mt-5">
+              <EmptyState
+                icon={<IconInspections size={34} />}
+                title="No completed inspections yet"
+                hint="Passed and sent walkarounds will show up here."
+              />
+            </Panel>
+          )}
+        </section>
       </div>
     </AppShell>
   );

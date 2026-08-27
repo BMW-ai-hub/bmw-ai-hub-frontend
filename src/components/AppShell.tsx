@@ -98,10 +98,16 @@ export function AppShell({
                 onClick={() => onNavigate(key)}
                 aria-current={active ? 'page' : undefined}
                 title={open ? undefined : label}
-                className={`flex h-11 items-center gap-3 rounded-md text-body font-semibold transition-colors duration-[120ms] ease-swift ${
+                className={`relative flex h-11 items-center gap-3 rounded-md text-body font-semibold transition-colors duration-[120ms] ease-swift ${
                   open ? 'px-3' : 'justify-center'
                 } ${active ? 'bg-well text-ink' : 'text-ink-500 hover:bg-zebra hover:text-ink'}`}
               >
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-ink"
+                  />
+                )}
                 <span className="shrink-0">
                   <Icon size={19} />
                 </span>

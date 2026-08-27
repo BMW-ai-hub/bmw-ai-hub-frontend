@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Config, Inspection, Score, User, Video } from '../types';
 import { getConfig, getInspection, getInspectionVideos, getScore } from '../api';
 import { AppShell } from '../components/AppShell';
+import { BeforeYouRecord } from '../components/inspection/BeforeYouRecord';
+import { InspectionHero } from '../components/inspection/InspectionHero';
 import { UploadPanel } from '../components/inspection/UploadPanel';
 import { Button } from '../components/ui/Button';
 import { StatusChip, Tag } from '../components/ui/Chip';
@@ -15,7 +17,6 @@ import {
   Panel,
   PanelBlock,
 } from '../components/ui/Panel';
-import { PageHeading } from '../components/ui/PageHeading';
 import { IconVideo } from '../components/ui/icons';
 
 type Tab = 'current' | 'history' | 'brief' | 'attempts';
@@ -136,9 +137,8 @@ export default function InspectionDetail({
       breadcrumb={crumbs}
     >
       <div className="space-y-7">
-        <PageHeading
-          title={`${inspection.vehicle.year} BMW ${inspection.vehicle.model}`}
-          description={`${inspection.service_type} · ${inspection.customer.name} · opened ${dateTime(inspection.created_at)}`}
+        <InspectionHero
+          inspection={inspection}
           actions={
             <>
               <StatusChip status={inspection.status} />
@@ -154,6 +154,9 @@ export default function InspectionDetail({
             </>
           }
         />
+        <p className="text-cell font-medium text-ink-500">
+          {inspection.customer.name} · opened {dateTime(inspection.created_at)}
+        </p>
 
         <SegmentedControl
           label="Inspection sections"
@@ -245,13 +248,28 @@ export default function InspectionDetail({
               )}
 
               {canUpload ? (
-                <UploadPanel
-                  inspectionId={inspectionId}
-                  serviceType={inspection.service_type}
-                  config={config}
-                  hasPreviousAttempt={latestScore != null}
-                  onGraded={(videoId) => onVideoProcesed(inspectionId, videoId)}
-                />
+                <div className="space-y-5">
+                  <div>
+                    <p className="eyebrow">Technician video walk-around</p>
+                    <h2 className="mt-1.5 font-display text-heading">
+                      Show the customer what you found
+                    </h2>
+                    <p className="mt-1.5 max-w-prose text-cell leading-relaxed text-ink-500">
+                      Record a concise walkthrough that shows the condition, measurement and
+                      recommended action clearly on camera.
+                    </p>
+                  </div>
+
+                  <BeforeYouRecord />
+
+                  <UploadPanel
+                    inspectionId={inspectionId}
+                    serviceType={inspection.service_type}
+                    config={config}
+                    hasPreviousAttempt={latestScore != null}
+                    onGraded={(videoId) => onVideoProcesed(inspectionId, videoId)}
+                  />
+                </div>
               ) : (
                 <Notice tone="info" title="Sent to customer">
                   This inspection has been released. No further uploads are accepted.

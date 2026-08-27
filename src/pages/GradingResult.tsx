@@ -1,68 +1,24 @@
-import { useEffect, useState } from 'react';
-import type { CriterionScore, Inspection, Score, User } from '../types';
+import { useEffect, useRef, useState } from 'react';
+import type { Inspection, Score, User } from '../types';
 import { getConfig, getInspection, getScore, sendInspection } from '../api';
+import { MOCK_VIDEO_ANALYSIS } from '../mockData';
 import { AppShell } from '../components/AppShell';
+import { CriterionAccordion } from '../components/grading/CriterionAccordion';
+import { CustomerPreview } from '../components/grading/CustomerPreview';
+import { EvidenceGallery } from '../components/grading/EvidenceGallery';
+import { RubricNotice } from '../components/grading/RubricNotice';
+import { VideoAnalysisSummary } from '../components/grading/VideoAnalysisSummary';
+import { VideoBreakdown } from '../components/grading/VideoBreakdown';
+import { VideoOverview } from '../components/grading/VideoOverview';
+import { VideoPlayerCard } from '../components/grading/VideoPlayerCard';
 import { Button } from '../components/ui/Button';
 import { Tag } from '../components/ui/Chip';
-import { Meter, ScoreDial } from '../components/ui/Metrics';
+import { ScoreDial } from '../components/ui/Metrics';
 import { EmptyState, Notice, Panel, PanelHeader } from '../components/ui/Panel';
 import { PageHeading } from '../components/ui/PageHeading';
-import { IconCheck, IconClose, IconSend, IconTrend } from '../components/ui/icons';
+import { IconSend, IconTrend, IconVideo } from '../components/ui/icons';
 
 const REDIRECT_DELAY_MS = 1800;
-
-function CriterionRow({
-  criterion,
-  index,
-  threshold,
-}: {
-  criterion: CriterionScore;
-  index: number;
-  threshold: number;
-}) {
-  // Trust the grader's own verdict when it supplied one; only fall back to the
-  // score comparison when `passed` is null. Deriving it purely from the score
-  // made the rows disagree with the "n of m passed" count in the header.
-  const passing = criterion.passed ?? criterion.score >= threshold;
-
-  return (
-    <li className="flex flex-wrap items-start gap-x-4 gap-y-3 px-5 py-4">
-      <span className="tnum w-7 shrink-0 pt-0.5 font-display text-cell font-bold text-ink-300">
-        {String(index + 1).padStart(2, '0')}
-      </span>
-
-      <span
-        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${
-          passing ? 'bg-pass-wash text-pass' : 'bg-fail-wash text-fail'
-        }`}
-      >
-        {passing ? <IconCheck size={11} /> : <IconClose size={11} />}
-      </span>
-
-      <div className="min-w-0 flex-1 sm:min-w-[14rem]">
-        <p className="font-bold text-ink">{criterion.display_name}</p>
-        {/* Guidance is the whole point of this screen — shown in full, never
-            behind a disclosure. */}
-        {criterion.guidance && (
-          <p className="mt-1.5 max-w-prose text-cell leading-relaxed text-ink-500">
-            {criterion.guidance}
-          </p>
-        )}
-      </div>
-
-      <span className="flex shrink-0 items-center gap-3 pt-0.5">
-        <Meter value={criterion.score} threshold={threshold} width={72} showValue={false} />
-        <span
-          className={`tnum w-11 text-right font-display text-cell font-bold ${
-            passing ? 'text-pass' : 'text-fail'
-          }`}
-        >
-          {criterion.score}%
-        </span>
-      </span>
-    </li>
-  );
-}
 
 interface Props {
   user: User;
@@ -89,6 +45,7 @@ export default function GradingResult({
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const breakdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Promise.all([getScore(videoId), getInspection(inspectionId), getConfig()])
@@ -146,6 +103,9 @@ export default function GradingResult({
       setSending(false);
     }
   };
+
+  const scrollToBreakdown = () =>
+    breakdownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <AppShell
@@ -223,6 +183,26 @@ export default function GradingResult({
           </div>
         </Panel>
 
+        {/* ── Video analysis ───────────────────────────────────────── */}
+        <Panel flush>
+          <PanelHeader title="Video analysis" icon={<IconVideo size={17} />} />
+          <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_240px]">
+            <VideoPlayerCard
+              durationSeconds={MOCK_VIDEO_ANALYSIS.duration_seconds}
+              posterSrc={inspection.thumbnail}
+            />
+            <VideoAnalysisSummary
+              overallScore={score.overall_score}
+              passing={passing}
+              onViewBreakdown={scrollToBreakdown}
+            />
+          </div>
+        </Panel>
+
+        <VideoOverview />
+        <VideoBreakdown ref={breakdownRef} />
+        <EvidenceGallery />
+
         {/* ── Criterion breakdown ───────────────────────────────────── */}
         <Panel flush>
           <PanelHeader
@@ -232,7 +212,7 @@ export default function GradingResult({
           />
           <ol className="divide-y divide-line">
             {score.criteria.map((criterion, index) => (
-              <CriterionRow
+              <CriterionAccordion
                 key={criterion.key}
                 criterion={criterion}
                 index={index}
@@ -253,10 +233,12 @@ export default function GradingResult({
           </footer>
         </Panel>
 
-        <Notice tone="info">
+        <CustomerPreview />
+
+        <RubricNotice>
           Graded against the BMW CPO Vehicle Inspection rubric. Tone and brand-voice criteria are
           assessed against the reference walkaround; official policy documents are pending.
-        </Notice>
+        </RubricNotice>
       </div>
     </AppShell>
   );
