@@ -1,0 +1,10 @@
+{
+  "description": "This web application streamlines user interactions with a seamless frontend experience, enhancing productivity for businesses by integrating backend functionalities.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
