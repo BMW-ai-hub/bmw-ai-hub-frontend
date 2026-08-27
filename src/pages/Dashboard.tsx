@@ -35,9 +35,9 @@ function SummaryStrip({ items }: { items: readonly { label: string; value: numbe
   return (
     <dl className="grid grid-cols-2 divide-line rounded-lg border border-line sm:grid-cols-4 sm:divide-x">
       {items.map((item) => (
-        <div key={item.label} className="px-5 py-4">
+        <div key={item.label} className="px-6 py-6">
           <dt className="eyebrow">{item.label}</dt>
-          <dd className={`tnum mt-2 font-display text-title ${item.tone}`}>{item.value}</dd>
+          <dd className={`tnum mt-3 font-display text-display ${item.tone}`}>{item.value}</dd>
         </div>
       ))}
     </dl>
@@ -54,7 +54,7 @@ function FilterChips({
   onSelect: (key: InspectionStatus | 'all') => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2.5">
       {STATUS_FILTERS.map((filter) => {
         const selected = filter.key === active;
         return (
@@ -62,7 +62,7 @@ function FilterChips({
             key={filter.key}
             onClick={() => onSelect(filter.key)}
             aria-pressed={selected}
-            className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-cell font-bold transition-colors duration-[120ms] ease-swift ${
+            className={`inline-flex h-11 items-center gap-2.5 rounded-full border px-4 text-body font-bold transition-colors duration-[120ms] ease-swift ${
               selected
                 ? 'border-ink bg-ink text-paper'
                 : 'border-line bg-paper text-ink-600 hover:border-ink-300 hover:text-ink'
@@ -70,7 +70,7 @@ function FilterChips({
           >
             {filter.label}
             <span
-              className={`tnum rounded-full px-1.5 py-0.5 text-[0.625rem] leading-none font-bold ${
+              className={`tnum rounded-full px-2 py-0.5 text-cell leading-none font-bold ${
                 selected ? 'bg-paper/25 text-paper' : 'bg-well text-ink-500'
               }`}
             >
@@ -222,7 +222,7 @@ export default function Dashboard({ user, onNavigate, onOpenInspection, onLogout
       onLogout={onLogout}
       breadcrumb={[{ label: 'Inspections' }]}
     >
-      <div className="space-y-7">
+      <div className="mx-auto max-w-[1600px] space-y-8">
         <PageHeading
           title={isManager ? 'All Inspections' : 'My Queue'}
           count={scoped.length}
@@ -259,13 +259,6 @@ export default function Dashboard({ user, onNavigate, onOpenInspection, onLogout
         />
 
         {error && <Notice tone="fail" title="Could not load inspections">{error}</Notice>}
-
-        {needsRevision > 0 && (
-          <Notice tone="fail" title={`${needsRevision} blocked by video quality`}>
-            {needsRevision === 1 ? 'One walkaround scored' : 'These walkarounds scored'} below the
-            80% threshold and cannot be sent until re-recorded.
-          </Notice>
-        )}
 
         <SummaryStrip
           items={[

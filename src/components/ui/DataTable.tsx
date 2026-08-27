@@ -130,7 +130,7 @@ export function DataTable<T>({
   };
 
   const spanCount = columns.length + (leading ? 1 : 0) + (rowActions ? 1 : 0);
-  const cellPad = 'px-4 py-3.5';
+  const cellPad = 'px-5 py-4';
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-paper">
@@ -253,7 +253,7 @@ export function DataTable<T>({
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={`${cellPad} align-middle text-cell ${
+                      className={`${cellPad} align-middle text-body ${
                         column.align === 'right' ? 'text-right' : 'text-left'
                       }`}
                     >

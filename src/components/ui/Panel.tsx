@@ -53,8 +53,8 @@ export function PanelBlock({
   children: React.ReactNode;
 }) {
   return (
-    <Panel className="p-5">
-      <div className="mb-3 flex items-center gap-3">
+    <Panel className="p-6">
+      <div className="mb-4 flex items-center gap-3">
         <p className="eyebrow">{eyebrow}</p>
         {actions && <div className="ml-auto">{actions}</div>}
       </div>
@@ -79,10 +79,10 @@ export function DefinitionRow({
   emphasis?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-2.5">
-      <dt className="shrink-0 text-cell font-medium text-ink-500">{label}</dt>
+    <div className="flex items-baseline justify-between gap-4 py-3.5">
+      <dt className="shrink-0 text-body font-medium text-ink-500">{label}</dt>
       <dd
-        className={`tnum text-right text-cell font-bold break-words ${
+        className={`tnum text-right text-lead font-bold break-words ${
           emphasis ? 'text-ink' : 'text-ink-800'
         }`}
       >
