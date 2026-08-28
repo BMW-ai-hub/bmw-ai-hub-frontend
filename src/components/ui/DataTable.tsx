@@ -27,6 +27,8 @@ interface DataTableProps<T> {
   defaultPageSize?: number;
   /** Leading media cell — thumbnail column in the reference. */
   leading?: { header: React.ReactNode; render: (row: T) => React.ReactNode };
+  /** Track width for the leading column; widen when its thumbnail is bigger than the default icon tile. */
+  leadingWidth?: number;
   rowActions?: (row: T) => RowAction[];
   onRowClick?: (row: T) => void;
   empty?: React.ReactNode;
@@ -68,6 +70,7 @@ export function DataTable<T>({
   paginate = false,
   defaultPageSize = 10,
   leading,
+  leadingWidth = 68,
   rowActions,
   onRowClick,
   empty,
@@ -130,17 +133,17 @@ export function DataTable<T>({
   };
 
   const spanCount = columns.length + (leading ? 1 : 0) + (rowActions ? 1 : 0);
-  const cellPad = 'px-5 py-4';
+  const cellPad = 'px-6 py-5';
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-paper">
+    <div className="overflow-hidden rounded-xl border border-line bg-paper shadow-[0_1px_2px_rgba(20,20,22,0.03)]">
       <div className="scroll-x">
         {/* table-fixed makes the colgroup widths authoritative; with auto
             layout, nowrap cell content (emails, VINs) forces the table wider
             than its container and the trailing columns get clipped. */}
         <table className="w-full table-fixed border-collapse" style={{ minWidth }}>
           <colgroup>
-            {leading && <col style={{ width: 68 }} />}
+            {leading && <col style={{ width: leadingWidth }} />}
             {columns.map((column) => (
               <col key={column.key} style={column.width ? { width: column.width } : undefined} />
             ))}
@@ -148,9 +151,9 @@ export function DataTable<T>({
           </colgroup>
 
           <thead>
-            <tr className="border-b border-line">
+            <tr className="border-b border-line-strong bg-well/40">
               {leading && (
-                <th scope="col" className={`${cellPad} text-left text-ink-300`}>
+                <th scope="col" className={`${cellPad} py-4 text-left text-ink-300`}>
                   {leading.header}
                 </th>
               )}
@@ -165,14 +168,14 @@ export function DataTable<T>({
                         : 'descending'
                       : undefined
                   }
-                  className={`${cellPad} text-cell font-bold whitespace-nowrap text-ink ${
+                  className={`${cellPad} py-4 text-micro font-bold tracking-[0.08em] whitespace-nowrap text-ink-500 uppercase ${
                     column.align === 'right' ? 'text-right' : 'text-left'
                   }`}
                 >
                   {column.sortValue ? (
                     <button
                       onClick={() => toggleSort(column.key)}
-                      className={`inline-flex items-center gap-1.5 transition-colors hover:text-ink-600 ${
+                      className={`inline-flex items-center gap-1.5 transition-colors hover:text-ink ${
                         column.align === 'right' ? 'flex-row-reverse' : ''
                       }`}
                     >
@@ -184,7 +187,7 @@ export function DataTable<T>({
                   )}
                 </th>
               ))}
-              {rowActions && <th scope="col" className={cellPad} />}
+              {rowActions && <th scope="col" className={`${cellPad} py-4`} />}
             </tr>
 
             {filterRow && (

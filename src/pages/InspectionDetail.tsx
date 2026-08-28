@@ -1,41 +1,24 @@
 import { useEffect, useState } from 'react';
-import type { Config, Inspection, Score, User, Video } from '../types';
-import { getConfig, getInspection, getInspectionVideos, getScore } from '../api';
+import type { Config, Inspection, User, Video } from '../types';
+import { getConfig, getInspection, getInspectionVideos } from '../api';
 import { AppShell } from '../components/AppShell';
+import { GradingBreakdown } from '../components/inspection/GradingBreakdown';
 import { UploadPanel } from '../components/inspection/UploadPanel';
 import { Button } from '../components/ui/Button';
-import { StatusChip, Tag } from '../components/ui/Chip';
+import { StatusChip } from '../components/ui/Chip';
 import { SegmentedControl } from '../components/ui/Controls';
-import { ScoreDial } from '../components/ui/Metrics';
-import {
-  DefinitionList,
-  DefinitionRow,
-  EmptyState,
-  Notice,
-  Panel,
-  PanelBlock,
-} from '../components/ui/Panel';
+import { DefinitionList, DefinitionRow, EmptyState, Panel, PanelBlock } from '../components/ui/Panel';
 import { PageHeading } from '../components/ui/PageHeading';
 import { IconChevronLeft, IconVideo } from '../components/ui/icons';
 
-type Tab = 'current' | 'history' | 'brief' | 'attempts';
+type Tab = 'video' | 'details' | 'history' | 'attempts';
 
 const TABS = [
-  { value: 'current', label: 'Current' },
+  { value: 'video', label: 'Video walkthrough' },
+  { value: 'details', label: 'Details' },
   { value: 'history', label: 'Service History' },
-  { value: 'brief', label: 'Brief' },
   { value: 'attempts', label: 'Attempts' },
 ] as const satisfies readonly { value: Tab; label: string }[];
-
-const RUBRIC = [
-  'Completeness',
-  'Accuracy of terminology',
-  'Clear finding shown to customer',
-  'Explanation of impact',
-  'Recommendation clarity',
-  'Tone and professionalism',
-  'Brand voice compliance',
-];
 
 const DEFAULT_CONFIG: Config = {
   grading_threshold_percent: 80,
@@ -65,7 +48,6 @@ interface Props {
   onNavigate: (page: string) => void;
   onLogout: () => void;
   onViewScore: (inspectionId: string, videoId: string) => void;
-  onVideoProcesed: (inspectionId: string, videoId: string) => void;
 }
 
 export default function InspectionDetail({
@@ -74,30 +56,31 @@ export default function InspectionDetail({
   onNavigate,
   onLogout,
   onViewScore,
-  onVideoProcesed,
 }: Props) {
   const [inspection, setInspection] = useState<Inspection>();
   const [videos, setVideos] = useState<Video[]>([]);
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
-  const [latestScore, setLatestScore] = useState<Score | null>(null);
-  const [tab, setTab] = useState<Tab>('current');
+  const [tab, setTab] = useState<Tab>('video');
   const [loadError, setLoadError] = useState('');
+  // Only meaningful once a video already exists — false shows the graded
+  // breakdown, true swaps it for the upload box so a technician can record
+  // another attempt without leaving this page.
+  const [reuploading, setReuploading] = useState(false);
 
-  useEffect(() => {
+  const load = () =>
     Promise.all([getInspection(inspectionId), getInspectionVideos(inspectionId), getConfig()])
       .then(([item, attempts, settings]) => {
         setInspection(item);
         setVideos(attempts);
         setConfig(settings);
-        if (item.latest_video_id) {
-          getScore(item.latest_video_id)
-            .then(setLatestScore)
-            .catch(() => setLatestScore(null));
-        }
       })
       .catch((cause) =>
         setLoadError(cause instanceof Error ? cause.message : 'Unable to load inspection'),
       );
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inspectionId]);
 
   const crumbs = [
@@ -126,6 +109,16 @@ export default function InspectionDetail({
 
   const threshold = config.grading_threshold_percent;
   const canUpload = inspection.status !== 'sent';
+  const hasVideo = Boolean(inspection.latest_video_id);
+
+  // A fresh upload finishing (or a reupload replacing the current attempt)
+  // -- refetch so latest_video_id/latest_score/status/attempt_count are
+  // current, then swap straight to the graded breakdown for it. No page
+  // navigation: this is the whole point of keeping it on one page.
+  const handleGraded = () => {
+    setReuploading(false);
+    load();
+  };
 
   return (
     <AppShell
@@ -170,102 +163,94 @@ export default function InspectionDetail({
           onChange={setTab}
         />
 
-        {/* ── Current ─────────────────────────────────────────────── */}
-        {tab === 'current' && (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[400px_minmax(0,1fr)]">
-            <div className="space-y-6">
-              <PanelBlock eyebrow="Vehicle">
-                <DefinitionList>
-                  <DefinitionRow
-                    label="Model"
-                    value={`${inspection.vehicle.year} BMW ${inspection.vehicle.model}`}
-                  />
-                  <DefinitionRow label="VIN" value={inspection.vehicle.vin} emphasis />
-                  <DefinitionRow label="Colour" value={inspection.vehicle.color} />
-                  <DefinitionRow
-                    label="Mileage"
-                    value={`${inspection.vehicle.mileage.toLocaleString()} km`}
-                  />
-                </DefinitionList>
-              </PanelBlock>
-
-              <PanelBlock eyebrow="Customer">
-                <DefinitionList>
-                  <DefinitionRow label="Name" value={inspection.customer.name} />
-                  <DefinitionRow label="Email" value={inspection.customer.email} />
-                  <DefinitionRow label="Phone" value={inspection.customer.phone} />
-                </DefinitionList>
-              </PanelBlock>
-
-              <PanelBlock eyebrow="Work order">
-                <DefinitionList>
-                  <DefinitionRow label="Service" value={inspection.service_type} />
-                  <DefinitionRow
-                    label="Status"
-                    value={<StatusChip status={inspection.status} size="sm" />}
-                  />
-                  <DefinitionRow label="Attempts" value={inspection.attempt_count} />
-                  <DefinitionRow label="Opened" value={date(inspection.created_at)} />
-                </DefinitionList>
-              </PanelBlock>
-            </div>
-
-            <div className="space-y-6">
-              {latestScore && (
-                <Panel className="flex flex-wrap items-start gap-8 p-8">
-                  <ScoreDial
-                    score={latestScore.overall_score}
-                    threshold={latestScore.threshold_percent}
-                    size={160}
-                    stroke={13}
-                    caption={
-                      latestScore.overall_score >= latestScore.threshold_percent ? 'Pass' : 'Fail'
-                    }
-                  />
-                  <div className="min-w-0 flex-1 basis-72 sm:min-w-[16rem]">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="font-display text-title">Latest grade</h2>
-                      <Tag>{latestScore.threshold_percent}% required</Tag>
-                    </div>
-                    <p className="mt-3 text-lead leading-relaxed text-ink-600">
-                      {latestScore.feedback}
-                    </p>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      <Button
-                        variant="primary"
-                        size="md"
-                        onClick={() => onViewScore(inspectionId, inspection.latest_video_id!)}
-                      >
-                        Full breakdown
-                      </Button>
-                      {inspection.status === 'passed' && inspection.can_send && (
-                        <Button
-                          variant="secondary"
-                          size="md"
-                          onClick={() => onViewScore(inspectionId, inspection.latest_video_id!)}
-                        >
-                          Review &amp; send
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+        {/* ── Video walkthrough ──────────────────────────────────────
+            The whole point of this tool: the video, its grade, and its
+            breakdown, front and centre with nothing else competing for
+            space. Everything about the vehicle/customer/work order lives
+            in Details instead. */}
+        {tab === 'video' && (
+          <>
+            {!canUpload ? (
+              hasVideo ? (
+                <GradingBreakdown
+                  inspectionId={inspectionId}
+                  videoId={inspection.latest_video_id!}
+                  onNavigate={onNavigate}
+                  onSendSuccess={() => onNavigate('dashboard')}
+                  onReupload={() => {}}
+                  canReupload={false}
+                />
+              ) : (
+                <Panel>
+                  <EmptyState title="Sent to customer" hint="No video was ever uploaded for this inspection." />
                 </Panel>
-              )}
-
-              {canUpload ? (
+              )
+            ) : hasVideo && !reuploading ? (
+              <GradingBreakdown
+                inspectionId={inspectionId}
+                videoId={inspection.latest_video_id!}
+                onNavigate={onNavigate}
+                onSendSuccess={() => onNavigate('dashboard')}
+                onReupload={() => setReuploading(true)}
+              />
+            ) : (
+              <div className="space-y-3">
+                {hasVideo && (
+                  <div className="flex justify-end">
+                    <Button variant="quiet" size="sm" onClick={() => setReuploading(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
                 <UploadPanel
                   inspectionId={inspectionId}
                   serviceType={inspection.service_type}
                   config={config}
-                  hasPreviousAttempt={latestScore != null}
-                  onGraded={(videoId) => onVideoProcesed(inspectionId, videoId)}
+                  hasPreviousAttempt={hasVideo}
+                  onGraded={handleGraded}
                 />
-              ) : (
-                <Notice tone="info" title="Sent to customer">
-                  This inspection has been released. No further uploads are accepted.
-                </Notice>
-              )}
-            </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Details ─────────────────────────────────────────────── */}
+        {tab === 'details' && (
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3">
+            <PanelBlock eyebrow="Vehicle">
+              <DefinitionList>
+                <DefinitionRow
+                  label="Model"
+                  value={`${inspection.vehicle.year} BMW ${inspection.vehicle.model}`}
+                />
+                <DefinitionRow label="VIN" value={inspection.vehicle.vin} emphasis />
+                <DefinitionRow label="Colour" value={inspection.vehicle.color} />
+                <DefinitionRow
+                  label="Mileage"
+                  value={`${inspection.vehicle.mileage.toLocaleString()} km`}
+                />
+              </DefinitionList>
+            </PanelBlock>
+
+            <PanelBlock eyebrow="Customer">
+              <DefinitionList>
+                <DefinitionRow label="Name" value={inspection.customer.name} />
+                <DefinitionRow label="Email" value={inspection.customer.email} />
+                <DefinitionRow label="Phone" value={inspection.customer.phone} />
+              </DefinitionList>
+            </PanelBlock>
+
+            <PanelBlock eyebrow="Work order">
+              <DefinitionList>
+                <DefinitionRow label="Service" value={inspection.service_type} />
+                <DefinitionRow
+                  label="Status"
+                  value={<StatusChip status={inspection.status} size="sm" />}
+                />
+                <DefinitionRow label="Attempts" value={inspection.attempt_count} />
+                <DefinitionRow label="Opened" value={date(inspection.created_at)} />
+              </DefinitionList>
+            </PanelBlock>
           </div>
         )}
 
@@ -306,44 +291,6 @@ export default function InspectionDetail({
               </ol>
             )}
           </Panel>
-        )}
-
-        {/* ── Brief ──────────────────────────────────────────────── */}
-        {tab === 'brief' && (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2">
-            <PanelBlock eyebrow="Work order">
-              <DefinitionList>
-                <DefinitionRow label="Service" value={inspection.service_type} />
-                <DefinitionRow
-                  label="Status"
-                  value={<StatusChip status={inspection.status} size="sm" />}
-                />
-                <DefinitionRow label="Opened" value={dateTime(inspection.created_at)} />
-                <DefinitionRow label="Last updated" value={dateTime(inspection.updated_at)} />
-                <DefinitionRow label="Attempts" value={inspection.attempt_count} />
-                {inspection.latest_score != null && (
-                  <DefinitionRow
-                    label="Latest score"
-                    value={`${inspection.latest_score}%`}
-                    emphasis
-                  />
-                )}
-              </DefinitionList>
-            </PanelBlock>
-
-            <PanelBlock eyebrow={`Rubric · ${threshold}% to pass`}>
-              <ol className="divide-y divide-line">
-                {RUBRIC.map((criterion, index) => (
-                  <li key={criterion} className="flex items-center gap-4 py-3.5">
-                    <span className="tnum w-8 shrink-0 font-display text-body font-bold text-ink-300">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <span className="text-lead font-semibold text-ink-600">{criterion}</span>
-                  </li>
-                ))}
-              </ol>
-            </PanelBlock>
-          </div>
         )}
 
         {/* ── Attempts ───────────────────────────────────────────── */}

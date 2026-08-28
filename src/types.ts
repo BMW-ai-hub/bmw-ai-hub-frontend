@@ -68,6 +68,18 @@ export interface CriterionScore {
   score: number;
   passed: boolean | null;
   guidance: string | null;
+  /** The single most useful change to reach 100% on this criterion. Null until AI Services supplies it (e.g. a video graded before this landed). */
+  to_reach?: string | null;
+  /** Chapter ids (see Score.chapters) this score is drawn from. */
+  evidence?: string[];
+}
+
+export interface VideoChapter {
+  id: string;
+  start_seconds: number;
+  end_seconds: number;
+  title: string;
+  description: string | null;
 }
 
 export interface Score {
@@ -78,6 +90,10 @@ export interface Score {
   can_send: boolean;
   feedback: string;
   criteria: CriterionScore[];
+  /** Video timeline for the breakdown tab. Empty/absent until AI Services supplies it. */
+  chapters?: VideoChapter[];
+  /** Browser-playable URL for the uploaded walkaround video. Null/absent in mock mode or before grading. */
+  video_url?: string | null;
 }
 
 export interface Config {

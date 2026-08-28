@@ -77,6 +77,33 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   return body as T;
 }
 
+/**
+ * fetch() can't surface upload progress on the request body, so the video
+ * upload (the one transfer worth showing a real bar for) goes over XHR
+ * instead. Mirrors request()'s auth header and error shape, minus the
+ * 401-retry dance — not worth the complexity for a form the user is
+ * actively watching.
+ */
+function xhrUpload<T>(path: string, form: FormData, onProgress?: (loaded: number, total: number) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE}${path}`);
+    const token = localStorage.getItem(ACCESS);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded, event.total);
+    };
+    xhr.onload = () => {
+      let body: unknown = null;
+      try { body = JSON.parse(xhr.responseText); } catch { /* empty/non-JSON body */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as T);
+      else reject(new ApiError(message(body, `Request failed (${xhr.status})`), xhr.status));
+    };
+    xhr.onerror = () => reject(new TypeError("Failed to fetch"));
+    xhr.send(form);
+  });
+}
+
 function toUser(u: { id: string; email: string; name: string; role: User["role"]; dealer_id: string | null }): User {
   return { id: u.id, email: u.email, name: u.name, role: u.role, dealership: u.dealer_id ? "BMW of Lahore" : "BMW Technician Network" };
 }
@@ -119,16 +146,33 @@ export const getInspectionVideos = (id: string) => withFallback<Video[]>(
   async () => (await request<BVideo[]>(`/inspections/${id}/videos`)).map(v => ({ ...v, overall_score: v.overall_score ?? undefined, filename: v.filename ?? `Attempt ${v.id.slice(0, 8)}` })),
   () => mock.getInspectionVideos(id),
 );
-export const uploadVideo = (id: string, file: File, serviceType: string) => withFallback<{ id: string }>(
-  () => { const data = new FormData(); data.append("file", file); data.append("service_type", serviceType); return request<BVideo>(`/inspections/${id}/videos`, { method: "POST", body: data }); },
+export const uploadVideo = (id: string, file: File, serviceType: string, onProgress?: (loaded: number, total: number) => void) => withFallback<{ id: string }>(
+  () => { const data = new FormData(); data.append("file", file); data.append("service_type", serviceType); return xhrUpload<BVideo>(`/inspections/${id}/videos`, data, onProgress); },
   () => mock.uploadVideo(id, file),
 );
 export const getVideo = (id: string) => withFallback<{ id: string; status: Video["status"]; grading_error?: string | null }>(
   () => request<BVideo & { grading_error?: string | null }>(`/videos/${id}`),
   () => mock.getVideo(id),
 );
+type BCriterion = { criterion: string; label: string | null; score: number; passed: boolean | null; guidance: string | null; to_reach?: string | null; evidence?: string[] };
+type BChapter = { id: string; start_seconds: number; end_seconds: number; title: string; description: string | null };
+type BScore = { video_id: string; inspection_id: string; overall_score: number | null; threshold_percent: number; can_send: boolean; feedback: string | null; criteria: BCriterion[]; chapters?: BChapter[]; video_url?: string | null };
+
 export const getScore = (id: string) => withFallback<Score>(
-  async () => { const s = await request<{ video_id: string; inspection_id: string; overall_score: number | null; threshold_percent: number; can_send: boolean; feedback: string | null; criteria: Array<{ criterion: string; label: string | null; score: number; passed: boolean | null; guidance: string | null }> }>(`/videos/${id}/score`); return { video_id: s.video_id, inspection_id: s.inspection_id, overall_score: s.overall_score ?? 0, threshold_percent: s.threshold_percent, can_send: s.can_send, feedback: s.feedback ?? "Grading is still in progress.", criteria: s.criteria.map(c => ({ key: c.criterion, display_name: c.label ?? c.criterion.replace(/_/g, " "), score: c.score, passed: c.passed, guidance: c.guidance })) }; },
+  async () => {
+    const s = await request<BScore>(`/videos/${id}/score`);
+    return {
+      video_id: s.video_id,
+      inspection_id: s.inspection_id,
+      overall_score: s.overall_score ?? 0,
+      threshold_percent: s.threshold_percent,
+      can_send: s.can_send,
+      feedback: s.feedback ?? "Grading is still in progress.",
+      criteria: s.criteria.map(c => ({ key: c.criterion, display_name: c.label ?? c.criterion.replace(/_/g, " "), score: c.score, passed: c.passed, guidance: c.guidance, to_reach: c.to_reach ?? null, evidence: c.evidence ?? [] })),
+      chapters: s.chapters ?? [],
+      video_url: s.video_url ?? null,
+    };
+  },
   () => mock.getScore(id),
 );
 export const sendInspection = (inspectionId: string, videoId?: string) => withFallback<void>(

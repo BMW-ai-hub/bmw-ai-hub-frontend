@@ -77,9 +77,6 @@ export default function App() {
         onViewScore={(inspectionId, videoId) =>
           setPage({ name: "grading", inspectionId, videoId })
         }
-        onVideoProcesed={(inspectionId, videoId) =>
-          setPage({ name: "grading", inspectionId, videoId })
-        }
       />
     );
   }

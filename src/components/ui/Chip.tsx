@@ -24,7 +24,7 @@ const DOTS: Record<Tone, string> = {
 const STATUS: Record<Status, { label: string; tone: Tone }> = {
   queued: { label: 'Queued', tone: 'neutral' },
   in_progress: { label: 'In Progress', tone: 'warn' },
-  needs_revision: { label: 'Needs Revision', tone: 'fail' },
+  needs_revision: { label: 'Action Required', tone: 'fail' },
   passed: { label: 'Passed', tone: 'pass' },
   // Committed and locked — carries the solid-ink treatment of the house style.
   sent: { label: 'Sent', tone: 'solid' },
@@ -34,17 +34,33 @@ const STATUS: Record<Status, { label: string; tone: Tone }> = {
   failed: { label: 'Failed', tone: 'fail' },
 };
 
-export function StatusChip({ status, size = 'md' }: { status: Status; size?: 'sm' | 'md' }) {
+export function StatusChip({ status, size = 'md' }: { status: Status; size?: 'sm' | 'md' | 'lg' }) {
   const config = STATUS[status] ?? { label: String(status).replace(/_/g, ' '), tone: 'neutral' as Tone };
-  const box = size === 'sm' ? 'h-5 px-1.5 gap-1.5' : 'h-6 px-2 gap-2';
+  const box =
+    size === 'sm' ? 'h-6 px-2.5 gap-1.5 text-micro' : size === 'lg' ? 'h-8 px-3.5 gap-2 text-cell' : 'h-7 px-3 gap-2 text-micro';
 
   return (
     <span
-      className={`inline-flex items-center rounded-sm border text-micro font-bold tracking-[0.08em] whitespace-nowrap uppercase ${box} ${TONES[config.tone]}`}
+      className={`inline-flex items-center rounded-full border font-bold tracking-[0.06em] whitespace-nowrap uppercase ${box} ${TONES[config.tone]}`}
     >
-      {/* Square, not circle — reads engineered rather than decorative. */}
-      <span className={`size-1.5 shrink-0 ${DOTS[config.tone]}`} />
+      <span className={`size-1.5 shrink-0 rounded-full ${DOTS[config.tone]}`} />
       {config.label}
+    </span>
+  );
+}
+
+/** Compact colour-coded score badge — a table-friendly alternative to the
+ * full Meter bar, for a glanceable "pass/fail at a percentage" read without
+ * needing the threshold-notch detail the bar exists to show. */
+export function ScorePill({ value, threshold = 80 }: { value: number; threshold?: number }) {
+  const passing = value >= threshold;
+  return (
+    <span
+      className={`tnum inline-flex h-8 items-center rounded-full border px-3.5 text-lead font-bold ${
+        passing ? 'bg-pass-wash text-pass border-pass/20' : 'bg-fail-wash text-fail border-fail/20'
+      }`}
+    >
+      {value}%
     </span>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Config } from '../../types';
 import { getVideo, uploadVideo } from '../../api';
 import { Button } from '../ui/Button';
@@ -6,6 +6,24 @@ import { Notice, Panel } from '../ui/Panel';
 import { IconCheck, IconUpload } from '../ui/icons';
 
 type Stage = 'idle' | 'uploading' | 'processing' | 'done';
+
+const mb = (bytes: number) => bytes / 1024 / 1024;
+
+/** Analysis pipeline steps shown while the graded status is still
+ * "processing". The real service doesn't expose per-step progress, so this
+ * advances on a timer as a plausible read of what's actually happening
+ * (upload → transcript → visual pass → rubric scoring) — capped one step
+ * short of the end so it never claims completion before the poll confirms
+ * `graded`. */
+const ANALYSIS_STEPS = [
+  'Video uploaded',
+  'Audio transcription',
+  'Visual inspection analysis',
+  'BMW guideline assessment',
+  'Final quality score',
+] as const;
+
+const STEP_INTERVAL_MS = 3200;
 
 interface Props {
   inspectionId: string;
@@ -27,7 +45,19 @@ export function UploadPanel({
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [uploaded, setUploaded] = useState(0);
+  const [activeStep, setActiveStep] = useState(1);
   const input = useRef<HTMLInputElement>(null);
+
+  // Steps the analysis checklist has moved past while still on 'processing'.
+  useEffect(() => {
+    if (stage !== 'processing') return;
+    setActiveStep(1);
+    const timer = window.setInterval(() => {
+      setActiveStep((step) => Math.min(step + 1, ANALYSIS_STEPS.length - 1));
+    }, STEP_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [stage]);
 
   const select = (candidate: File) => {
     if (!candidate.type.startsWith('video/') && !/\.(mp4|mov|avi)$/i.test(candidate.name)) {
@@ -45,8 +75,9 @@ export function UploadPanel({
   const start = async () => {
     if (!file) return;
     setStage('uploading');
+    setUploaded(0);
     try {
-      const accepted = await uploadVideo(inspectionId, file, serviceType);
+      const accepted = await uploadVideo(inspectionId, file, serviceType, (loaded) => setUploaded(loaded));
       setStage('processing');
 
       const poll = async () => {
@@ -156,26 +187,68 @@ export function UploadPanel({
         </>
       )}
 
-      {stage === 'uploading' && (
-        <div className="py-12">
-          <p className="font-display text-heading">Uploading…</p>
-          <p className="mt-1 text-cell font-medium text-ink-400">
-            Keep this tab open until the transfer completes.
-          </p>
-          {/* Indeterminate: the upload transport reports no progress events. */}
-          <div className="sweep relative mt-5 h-1 overflow-hidden rounded-full bg-well-deep" />
-        </div>
-      )}
-
-      {stage === 'processing' && (
-        <div className="flex flex-col items-center gap-5 py-14 text-center">
-          <span className="spin size-10 rounded-full border-2 border-well-deep border-t-ink" />
-          <div>
-            <p className="font-display text-heading">Grading in progress</p>
-            <p className="mt-1 text-cell font-medium text-ink-400">
-              Transcribing the walkaround and scoring it against the BMW rubric.
+      {stage === 'uploading' && (() => {
+        const total = file?.size ?? 0;
+        const percent = total > 0 ? Math.min(100, Math.round((uploaded / total) * 100)) : 0;
+        return (
+          <div className="py-10">
+            <div className="flex items-baseline justify-between gap-4">
+              <p className="font-display text-heading">Uploading video</p>
+              <span className="tnum font-display text-heading text-ink">{percent}%</span>
+            </div>
+            <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-well-deep">
+              <div
+                className="h-full rounded-full bg-ink transition-[width] duration-200 ease-swift"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <p className="tnum mt-3 text-cell font-semibold text-ink-400">
+              {mb(uploaded).toFixed(0)} MB of {mb(total).toFixed(0)} MB
+            </p>
+            <p className="mt-4 text-cell font-medium text-ink-400">
+              Keep this tab open until the transfer completes.
             </p>
           </div>
+        );
+      })()}
+
+      {stage === 'processing' && (
+        <div className="py-10">
+          <p className="font-display text-heading">Quality assessment in progress</p>
+          <p className="mt-1 text-cell font-medium text-ink-400">
+            Grounding the walkaround against the BMW inspection rubric.
+          </p>
+          <ol className="mt-6 space-y-3.5">
+            {ANALYSIS_STEPS.map((step, index) => {
+              const done = index < activeStep;
+              const active = index === activeStep;
+              return (
+                <li key={step} className="flex items-center gap-3">
+                  {done ? (
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-pass-wash text-pass">
+                      <IconCheck size={12} />
+                    </span>
+                  ) : active ? (
+                    <span className="relative flex size-5 shrink-0 items-center justify-center">
+                      <span className="absolute size-5 animate-ping rounded-full bg-ink/15" />
+                      <span className="relative size-2.5 rounded-full bg-ink" />
+                    </span>
+                  ) : (
+                    <span className="flex size-5 shrink-0 items-center justify-center">
+                      <span className="size-2.5 rounded-full border-2 border-line-strong" />
+                    </span>
+                  )}
+                  <span
+                    className={`text-cell font-semibold ${
+                      done ? 'text-ink-400' : active ? 'text-ink' : 'text-ink-300'
+                    }`}
+                  >
+                    {step}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
         </div>
       )}
 
