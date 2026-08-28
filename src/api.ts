@@ -80,14 +80,12 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   return body as T;
 }
 
-/**
- * fetch() can't surface upload progress on the request body, so the video
- * upload (the one transfer worth showing a real bar for) goes over XHR
- * instead. Mirrors request()'s auth header and error shape, minus the
- * 401-retry dance — not worth the complexity for a form the user is
- * actively watching.
- */
-function xhrUpload<T>(path: string, form: FormData, onProgress?: (loaded: number, total: number) => void): Promise<T> {
+/** One raw XHR round-trip — no retry logic, that lives in xhrUpload below. */
+function sendUpload(
+  path: string,
+  form: FormData,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<{ status: number; body: unknown }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${API_BASE}${path}`);
@@ -99,12 +97,32 @@ function xhrUpload<T>(path: string, form: FormData, onProgress?: (loaded: number
     xhr.onload = () => {
       let body: unknown = null;
       try { body = JSON.parse(xhr.responseText); } catch { /* empty/non-JSON body */ }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(body as T);
-      else reject(new ApiError(message(body, `Request failed (${xhr.status})`), xhr.status));
+      resolve({ status: xhr.status, body });
     };
     xhr.onerror = () => reject(new TypeError("Failed to fetch"));
     xhr.send(form);
   });
+}
+
+/**
+ * fetch() can't surface upload progress on the request body, so the video
+ * upload (the one transfer worth showing a real bar for) goes over XHR
+ * instead. Mirrors request()'s auth header, error shape, and 401-retry —
+ * a technician can easily sit on the upload screen (recording, picking a
+ * file, working up to hitting send) long enough for the access token to
+ * expire before the request ever goes out, and that shouldn't dead-end an
+ * upload any more than it does any other call.
+ */
+async function xhrUpload<T>(
+  path: string,
+  form: FormData,
+  onProgress?: (loaded: number, total: number) => void,
+  retry = true,
+): Promise<T> {
+  const { status, body } = await sendUpload(path, form, onProgress);
+  if (status === 401 && retry && await renew()) return xhrUpload<T>(path, form, onProgress, false);
+  if (status < 200 || status >= 300) throw new ApiError(message(body, `Request failed (${status})`), status);
+  return body as T;
 }
 
 function toUser(u: { id: string; email: string; name: string; role: User["role"]; dealer_id: string | null }): User {
