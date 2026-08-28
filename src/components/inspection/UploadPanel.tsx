@@ -77,7 +77,23 @@ export function UploadPanel({
     setStage('uploading');
     setUploaded(0);
     try {
-      const accepted = await uploadVideo(inspectionId, file, serviceType, (loaded) => setUploaded(loaded));
+      // The upload request doesn't just transfer bytes — technician-services
+      // runs transcription and grading synchronously inside the same call
+      // before it responds, so the HTTP request stays pending for tens of
+      // seconds after the transfer itself is done. Left keyed off the
+      // promise resolving, the UI sat frozen on "Uploading video 100%" for
+      // that whole stretch. Flip to the processing view as soon as the
+      // browser reports every byte sent (loaded >= total) instead of
+      // waiting for the response — that's the real moment the server starts
+      // analyzing, not whenever it happens to finish.
+      let sawFullUpload = false;
+      const accepted = await uploadVideo(inspectionId, file, serviceType, (loaded, total) => {
+        setUploaded(loaded);
+        if (!sawFullUpload && total > 0 && loaded >= total) {
+          sawFullUpload = true;
+          setStage('processing');
+        }
+      });
       setStage('processing');
 
       const poll = async () => {
