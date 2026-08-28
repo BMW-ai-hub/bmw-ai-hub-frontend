@@ -3,24 +3,24 @@ import type { Inspection, Video, Score, Config, PersonalAnalytics, TeamAnalytics
 export const MOCK_USERS: User[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
-    name: "Ali Raza",
-    email: "ali.raza@bmwdealer.test",
+    name: "Michael Thompson",
+    email: "michael.thompson@bmwdealer.test",
     role: "technician",
-    dealership: "BMW Dealership",
+    dealership: "BMW Manhattan",
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
-    name: "Sara Khan",
+    name: "Sarah Parker",
     email: "manager@bmwdealer.test",
     role: "manager",
-    dealership: "BMW Dealership",
+    dealership: "BMW Manhattan",
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
-    name: "Zain Ahmed",
+    name: "James Anderson",
     email: "admin@bmwdealer.test",
     role: "admin",
-    dealership: "BMW Dealership",
+    dealership: "BMW Manhattan",
   },
 ];
 
@@ -43,8 +43,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 0,
     customer: {
       id: "cc111111-0000-0000-0000-000000000001",
-      name: "Tariq Mehmood",
-      email: "tariq.mehmood@email.com",
+      name: "Robert Miller",
+      email: "robert.miller@email.com",
       phone: "+92-300-1234567",
     },
     vehicle: {
@@ -57,8 +57,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 14280,
       customer: {
         id: "cc111111-0000-0000-0000-000000000001",
-        name: "Tariq Mehmood",
-        email: "tariq.mehmood@email.com",
+        name: "Robert Miller",
+        email: "robert.miller@email.com",
         phone: "+92-300-1234567",
       },
     },
@@ -66,7 +66,7 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       {
         date: "2025-08-10",
         service_type: "Annual Service A",
-        technician: "Hassan Iqbal",
+        technician: "David Johnson",
         notes: "Oil change, filter replacement, CBS reset completed.",
         mileage: 7100,
       },
@@ -85,8 +85,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc222222-0000-0000-0000-000000000002",
-      name: "Ayesha Siddiqui",
-      email: "ayesha.s@email.com",
+      name: "Emily Davis",
+      email: "emily.davis@email.com",
       phone: "+92-321-9876543",
     },
     vehicle: {
@@ -99,8 +99,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 8920,
       customer: {
         id: "cc222222-0000-0000-0000-000000000002",
-        name: "Ayesha Siddiqui",
-        email: "ayesha.s@email.com",
+        name: "Emily Davis",
+        email: "emily.davis@email.com",
         phone: "+92-321-9876543",
       },
     },
@@ -108,14 +108,14 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       {
         date: "2025-11-20",
         service_type: "Vehicle Handover Inspection",
-        technician: "Ali Raza",
+        technician: "Michael Thompson",
         notes: "Pre-delivery check passed. All fluids topped, tire pressures set.",
         mileage: 0,
       },
       {
         date: "2026-02-14",
         service_type: "Annual Service A",
-        technician: "Ali Raza",
+        technician: "Michael Thompson",
         notes: "Routine service completed. CBS indicator reset.",
         mileage: 4320,
       },
@@ -134,8 +134,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc333333-0000-0000-0000-000000000003",
-      name: "Bilal Chaudhry",
-      email: "bilal.c@email.com",
+      name: "Daniel Wilson",
+      email: "daniel.wilson@email.com",
       phone: "+92-333-5554433",
     },
     vehicle: {
@@ -148,8 +148,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 31540,
       customer: {
         id: "cc333333-0000-0000-0000-000000000003",
-        name: "Bilal Chaudhry",
-        email: "bilal.c@email.com",
+        name: "Daniel Wilson",
+        email: "daniel.wilson@email.com",
         phone: "+92-333-5554433",
       },
     },
@@ -157,21 +157,21 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       {
         date: "2023-08-01",
         service_type: "Annual Service A",
-        technician: "Hassan Iqbal",
+        technician: "David Johnson",
         notes: "All CBS items reset. Tire tread 7mm all corners.",
         mileage: 11200,
       },
       {
         date: "2024-07-15",
         service_type: "Annual Service B",
-        technician: "Ali Raza",
+        technician: "Michael Thompson",
         notes: "Spark plugs replaced. Brake fluid flushed. DSC calibrated.",
         mileage: 21400,
       },
       {
         date: "2025-09-03",
         service_type: "Brake Pad Replacement — Front Axle",
-        technician: "Ali Raza",
+        technician: "Michael Thompson",
         notes: "Front pads replaced (worn to 3mm). Rotors within spec at 28mm.",
         mileage: 28700,
       },
@@ -190,8 +190,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc444444-0000-0000-0000-000000000004",
-      name: "Nadia Hussain",
-      email: "nadia.h@email.com",
+      name: "Jessica Moore",
+      email: "jessica.moore@email.com",
       phone: "+92-300-7778889",
     },
     vehicle: {
@@ -204,8 +204,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 6450,
       customer: {
         id: "cc444444-0000-0000-0000-000000000004",
-        name: "Nadia Hussain",
-        email: "nadia.h@email.com",
+        name: "Jessica Moore",
+        email: "jessica.moore@email.com",
         phone: "+92-300-7778889",
       },
     },
@@ -222,8 +222,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 0,
     customer: {
       id: "cc555555-0000-0000-0000-000000000005",
-      name: "Usman Farooq",
-      email: "usman.f@email.com",
+      name: "Christopher Taylor",
+      email: "christopher.taylor@email.com",
       phone: "+92-312-1112223",
     },
     vehicle: {
@@ -236,8 +236,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 5120,
       customer: {
         id: "cc555555-0000-0000-0000-000000000005",
-        name: "Usman Farooq",
-        email: "usman.f@email.com",
+        name: "Christopher Taylor",
+        email: "christopher.taylor@email.com",
         phone: "+92-312-1112223",
       },
     },
@@ -255,8 +255,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc666666-0000-0000-0000-000000000006",
-      name: "Imran Sheikh",
-      email: "imran.sheikh@email.com",
+      name: "Matthew Martin",
+      email: "matthew.martin@email.com",
       phone: "+92-301-2223344",
     },
     vehicle: {
@@ -269,8 +269,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 9800,
       customer: {
         id: "cc666666-0000-0000-0000-000000000006",
-        name: "Imran Sheikh",
-        email: "imran.sheikh@email.com",
+        name: "Matthew Martin",
+        email: "matthew.martin@email.com",
         phone: "+92-301-2223344",
       },
     },
@@ -288,8 +288,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc777777-0000-0000-0000-000000000007",
-      name: "Waqas Anjum",
-      email: "waqas.anjum@email.com",
+      name: "Andrew Jackson",
+      email: "andrew.jackson@email.com",
       phone: "+92-333-4445566",
     },
     vehicle: {
@@ -302,8 +302,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 18420,
       customer: {
         id: "cc777777-0000-0000-0000-000000000007",
-        name: "Waqas Anjum",
-        email: "waqas.anjum@email.com",
+        name: "Andrew Jackson",
+        email: "andrew.jackson@email.com",
         phone: "+92-333-4445566",
       },
     },
@@ -321,8 +321,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc888888-0000-0000-0000-000000000008",
-      name: "Sana Malik",
-      email: "sana.malik@email.com",
+      name: "Olivia White",
+      email: "olivia.white@email.com",
       phone: "+92-345-6667788",
     },
     vehicle: {
@@ -335,8 +335,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 3100,
       customer: {
         id: "cc888888-0000-0000-0000-000000000008",
-        name: "Sana Malik",
-        email: "sana.malik@email.com",
+        name: "Olivia White",
+        email: "olivia.white@email.com",
         phone: "+92-345-6667788",
       },
     },
@@ -354,8 +354,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc999999-0000-0000-0000-000000000009",
-      name: "Farhan Aziz",
-      email: "farhan.aziz@email.com",
+      name: "Ryan Harris",
+      email: "ryan.harris@email.com",
       phone: "+92-322-7778899",
     },
     vehicle: {
@@ -368,8 +368,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 26700,
       customer: {
         id: "cc999999-0000-0000-0000-000000000009",
-        name: "Farhan Aziz",
-        email: "farhan.aziz@email.com",
+        name: "Ryan Harris",
+        email: "ryan.harris@email.com",
         phone: "+92-322-7778899",
       },
     },
@@ -387,8 +387,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
     attempt_count: 1,
     customer: {
       id: "cc101010-0000-0000-0000-000000000010",
-      name: "Rabia Nadeem",
-      email: "rabia.nadeem@email.com",
+      name: "Megan Clark",
+      email: "megan.clark@email.com",
       phone: "+92-311-8889900",
     },
     vehicle: {
@@ -401,8 +401,8 @@ export const MOCK_INSPECTIONS: Inspection[] = [
       mileage: 7650,
       customer: {
         id: "cc101010-0000-0000-0000-000000000010",
-        name: "Rabia Nadeem",
-        email: "rabia.nadeem@email.com",
+        name: "Megan Clark",
+        email: "megan.clark@email.com",
         phone: "+92-311-8889900",
       },
     },
@@ -594,7 +594,7 @@ export const MOCK_SCORES: Record<string, Score> = {
 
 export const MOCK_PERSONAL_ANALYTICS: PersonalAnalytics = {
   technician_id: "11111111-1111-1111-1111-111111111111",
-  technician_name: "Ali Raza",
+  technician_name: "Michael Thompson",
   first_attempt_pass_rate: 72,
   average_score: 79,
   total_videos: 18,
@@ -615,7 +615,7 @@ export const MOCK_ALL_TECHNICIAN_ANALYTICS: PersonalAnalytics[] = [
   MOCK_PERSONAL_ANALYTICS,
   {
     technician_id: "2",
-    technician_name: "Hassan Iqbal",
+    technician_name: "David Johnson",
     first_attempt_pass_rate: 65,
     average_score: 75,
     total_videos: 22,
@@ -633,7 +633,7 @@ export const MOCK_ALL_TECHNICIAN_ANALYTICS: PersonalAnalytics[] = [
   },
   {
     technician_id: "3",
-    technician_name: "Faisal Qureshi",
+    technician_name: "Brian Walker",
     first_attempt_pass_rate: 58,
     average_score: 71,
     total_videos: 15,
@@ -650,7 +650,7 @@ export const MOCK_ALL_TECHNICIAN_ANALYTICS: PersonalAnalytics[] = [
   },
   {
     technician_id: "4",
-    technician_name: "Zara Ahmed",
+    technician_name: "Lauren Hall",
     first_attempt_pass_rate: 80,
     average_score: 83,
     total_videos: 20,
@@ -668,7 +668,7 @@ export const MOCK_ALL_TECHNICIAN_ANALYTICS: PersonalAnalytics[] = [
   },
   {
     technician_id: "5",
-    technician_name: "Kamran Shahid",
+    technician_name: "Kevin Allen",
     first_attempt_pass_rate: 70,
     average_score: 78,
     total_videos: 12,
@@ -685,14 +685,14 @@ export const MOCK_ALL_TECHNICIAN_ANALYTICS: PersonalAnalytics[] = [
 ];
 
 export const MOCK_TEAM_ANALYTICS: TeamAnalytics = {
-  dealership: "BMW Dealership",
+  dealership: "BMW Manhattan",
   overall_pass_rate: 68,
   overall_average_score: 77,
   members: [
-    { technician_id: "1", technician_name: "Ali Raza", first_attempt_pass_rate: 72, average_score: 79, total_videos: 18 },
-    { technician_id: "2", technician_name: "Hassan Iqbal", first_attempt_pass_rate: 65, average_score: 75, total_videos: 22 },
-    { technician_id: "3", technician_name: "Faisal Qureshi", first_attempt_pass_rate: 58, average_score: 71, total_videos: 15 },
-    { technician_id: "4", technician_name: "Zara Ahmed", first_attempt_pass_rate: 80, average_score: 83, total_videos: 20 },
-    { technician_id: "5", technician_name: "Kamran Shahid", first_attempt_pass_rate: 70, average_score: 78, total_videos: 12 },
+    { technician_id: "1", technician_name: "Michael Thompson", first_attempt_pass_rate: 72, average_score: 79, total_videos: 18 },
+    { technician_id: "2", technician_name: "David Johnson", first_attempt_pass_rate: 65, average_score: 75, total_videos: 22 },
+    { technician_id: "3", technician_name: "Brian Walker", first_attempt_pass_rate: 58, average_score: 71, total_videos: 15 },
+    { technician_id: "4", technician_name: "Lauren Hall", first_attempt_pass_rate: 80, average_score: 83, total_videos: 20 },
+    { technician_id: "5", technician_name: "Kevin Allen", first_attempt_pass_rate: 70, average_score: 78, total_videos: 12 },
   ],
 };

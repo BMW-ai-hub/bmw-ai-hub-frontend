@@ -126,7 +126,7 @@ async function xhrUpload<T>(
 }
 
 function toUser(u: { id: string; email: string; name: string; role: User["role"]; dealer_id: string | null }): User {
-  return { id: u.id, email: u.email, name: u.name, role: u.role, dealership: u.dealer_id ? "BMW of Lahore" : "BMW Technician Network" };
+  return { id: u.id, email: u.email, name: u.name, role: u.role, dealership: u.dealer_id ? "BMW Manhattan" : "BMW Technician Network" };
 }
 
 function toInspection(i: BInspection): Inspection {
@@ -209,6 +209,6 @@ export const getPersonalAnalytics = (user: User, technicianId?: string) => withF
   () => mock.getPersonalAnalytics(user, technicianId),
 );
 export const getTeamAnalytics = () => withFallback<TeamAnalytics>(
-  async () => { const d = await request<{ technician_count: number; average_score: number | null; first_attempt_pass_rate: number | null; per_technician: Array<{ technician_id: string; name: string | null; videos_graded: number; average_score: number | null; first_attempt_pass_rate: number | null }> }>("/analytics/team"); return { dealership: "BMW of Lahore", overall_pass_rate: d.first_attempt_pass_rate ?? 0, overall_average_score: d.average_score ?? 0, members: d.per_technician.map(t => ({ technician_id: t.technician_id, technician_name: t.name ?? "Technician", first_attempt_pass_rate: t.first_attempt_pass_rate ?? 0, average_score: t.average_score ?? 0, total_videos: t.videos_graded })) }; },
+  async () => { const d = await request<{ technician_count: number; average_score: number | null; first_attempt_pass_rate: number | null; per_technician: Array<{ technician_id: string; name: string | null; videos_graded: number; average_score: number | null; first_attempt_pass_rate: number | null }> }>("/analytics/team"); return { dealership: "BMW Manhattan", overall_pass_rate: d.first_attempt_pass_rate ?? 0, overall_average_score: d.average_score ?? 0, members: d.per_technician.map(t => ({ technician_id: t.technician_id, technician_name: t.name ?? "Technician", first_attempt_pass_rate: t.first_attempt_pass_rate ?? 0, average_score: t.average_score ?? 0, total_videos: t.videos_graded })) }; },
   () => mock.getTeamAnalytics(),
 );

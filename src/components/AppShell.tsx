@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { User } from '../types';
+import { BmwLogo } from './BmwLogo';
 import { Avatar } from './ui/Chip';
 import {
   IconAnalytics,
@@ -48,15 +49,12 @@ const SUPPORT = [
   { key: 'contact', label: 'Contact support', Icon: IconSupport },
 ] as const;
 
-/** Wordmark slot — swap for the licensed dealer mark when available. */
 function BrandMark({ open, dealership }: { open: boolean; dealership: string }) {
   return (
-    <div className={`flex flex-col ${open ? 'items-start' : 'items-center'}`}>
-      <span className="font-display text-[0.8125rem] leading-none font-extrabold tracking-[0.2em] text-ink">
-        BMW
-      </span>
+    <div className={`flex ${open ? 'items-center gap-3' : 'justify-center'}`}>
+      <BmwLogo className="h-10 w-10 shrink-0" />
       {open && (
-        <span className="mt-1.5 text-micro font-semibold tracking-[0.06em] text-ink-400">
+        <span className="text-micro font-semibold tracking-[0.06em] text-ink-400">
           {dealership}
         </span>
       )}

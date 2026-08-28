@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { User } from '../types';
 import { login } from '../api';
+import { BmwLogo } from '../components/BmwLogo';
 import { Button } from '../components/ui/Button';
 import { Labelled } from '../components/ui/Controls';
 import { Notice } from '../components/ui/Panel';
@@ -10,7 +11,7 @@ interface Props {
 }
 
 const DEMO_ACCOUNTS = [
-  { role: 'Technician', email: 'ali.raza@bmwdealer.test' },
+  { role: 'Technician', email: 'michael.thompson@bmwdealer.test' },
   { role: 'Manager', email: 'manager@bmwdealer.test' },
   { role: 'Administrator', email: 'admin@bmwdealer.test' },
 ];
@@ -37,9 +38,7 @@ export default function Login({ onLogin }: Props) {
     <div className="grid h-full grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,44%)_minmax(0,1fr)]">
       {/* ── Brand panel ─────────────────────────────────────────────── */}
       <aside className="hidden flex-col justify-between bg-ink p-12 text-paper lg:flex">
-        <span className="font-display text-[0.875rem] leading-none font-extrabold tracking-[0.22em]">
-          BMW
-        </span>
+        <BmwLogo className="h-12 w-12" />
 
         <div>
           <p className="eyebrow !text-paper/45">AI Inspection Hub</p>
@@ -60,9 +59,7 @@ export default function Login({ onLogin }: Props) {
       {/* ── Form ────────────────────────────────────────────────────── */}
       <main className="flex items-center justify-center bg-canvas px-6 py-12">
         <div className="w-full max-w-sm">
-          <span className="font-display text-[0.8125rem] leading-none font-extrabold tracking-[0.2em] lg:hidden">
-            BMW
-          </span>
+          <BmwLogo className="h-11 w-11 lg:hidden" />
 
           <h2 className="mt-8 font-display text-title lg:mt-0">Sign in</h2>
           <p className="mt-2 text-lead font-medium text-ink-500">
