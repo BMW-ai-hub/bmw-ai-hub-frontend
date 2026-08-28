@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { User } from '../types';
 import { login } from '../api';
-import { BmwLogo } from '../components/BmwLogo';
 import { Button } from '../components/ui/Button';
 import { Labelled } from '../components/ui/Controls';
 import { Notice } from '../components/ui/Panel';
@@ -37,10 +36,8 @@ export default function Login({ onLogin }: Props) {
   return (
     <div className="grid h-full grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,44%)_minmax(0,1fr)]">
       {/* ── Brand panel ─────────────────────────────────────────────── */}
-      <aside className="hidden flex-col justify-between bg-ink p-12 text-paper lg:flex">
-        <BmwLogo className="h-12 w-12" />
-
-        <div>
+      <aside className="relative hidden items-center bg-ink p-12 text-paper lg:flex">
+        <div className="w-full">
           <p className="eyebrow !text-paper/45">AI Inspection Hub</p>
           <h1 className="mt-5 font-display text-display text-balance">
             Every walkaround, graded to the same standard.
@@ -51,7 +48,7 @@ export default function Login({ onLogin }: Props) {
           </p>
         </div>
 
-        <p className="text-micro font-bold tracking-[0.16em] text-paper/40 uppercase">
+        <p className="absolute bottom-12 left-12 text-micro font-bold tracking-[0.16em] text-paper/40 uppercase">
           NetSol Technologies
         </p>
       </aside>
@@ -59,9 +56,7 @@ export default function Login({ onLogin }: Props) {
       {/* ── Form ────────────────────────────────────────────────────── */}
       <main className="flex items-center justify-center bg-canvas px-6 py-12">
         <div className="w-full max-w-sm">
-          <BmwLogo className="h-11 w-11 lg:hidden" />
-
-          <h2 className="mt-8 font-display text-title lg:mt-0">Sign in</h2>
+          <h2 className="font-display text-title">Sign in</h2>
           <p className="mt-2 text-lead font-medium text-ink-500">
             Use your dealership account to continue.
           </p>
