@@ -3,7 +3,7 @@ import type { Config } from '../../types';
 import { getVideo, uploadVideo } from '../../api';
 import { Button } from '../ui/Button';
 import { Notice, Panel } from '../ui/Panel';
-import { IconCheck, IconUpload } from '../ui/icons';
+import { IconCheck, IconDocument, IconUpload } from '../ui/icons';
 
 type Stage = 'idle' | 'uploading' | 'processing' | 'done';
 
@@ -117,9 +117,16 @@ export function UploadPanel({
 
       {stage === 'idle' && (
         <>
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => input.current?.click()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                input.current?.click();
+              }
+            }}
             onDragOver={(event) => {
               event.preventDefault();
               setDragOver(true);
@@ -131,19 +138,28 @@ export function UploadPanel({
               const dropped = event.dataTransfer.files[0];
               if (dropped) select(dropped);
             }}
-            className={`flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed px-6 py-14 text-center transition-colors duration-[120ms] ease-swift ${
-              dragOver ? 'border-ink bg-well' : 'border-line-strong bg-zebra hover:border-ink-300'
+            className={`flex w-full cursor-pointer flex-col items-center rounded-xl border-2 border-dashed px-6 py-14 text-center transition-colors duration-[120ms] ease-swift ${
+              dragOver ? 'border-ink bg-well' : 'border-line-strong bg-zebra hover:border-ink-300 hover:bg-well/60'
             }`}
           >
-            <span className="text-ink">
-              <IconUpload size={28} />
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-paper text-ink shadow-[0_1px_2px_rgba(20,20,22,0.06)]">
+              <IconUpload size={24} />
             </span>
-            <span className="font-display text-heading">
-              {file ? file.name : 'Drop a video, or browse'}
-            </span>
-            <span className="text-cell font-medium text-ink-400">
+            <p className="mt-5 max-w-xs font-display text-heading">
+              {file ? file.name : 'Record or upload the technician walkaround video'}
+            </p>
+            <p className="mt-2 text-cell font-medium text-ink-400">
+              Quality verification will begin automatically.
+            </p>
+            {!file && (
+              <span className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-body font-bold text-paper">
+                <IconUpload size={15} />
+                Upload video
+              </span>
+            )}
+            <p className="mt-5 text-micro font-bold tracking-[0.09em] text-ink-300 uppercase">
               MP4, MOV or AVI · up to {config.max_upload_mb} MB
-            </span>
+            </p>
             <input
               ref={input}
               type="file"
@@ -154,7 +170,7 @@ export function UploadPanel({
                 if (chosen) select(chosen);
               }}
             />
-          </button>
+          </div>
 
           {error && (
             <div className="mt-4">
@@ -191,10 +207,17 @@ export function UploadPanel({
         const total = file?.size ?? 0;
         const percent = total > 0 ? Math.min(100, Math.round((uploaded / total) * 100)) : 0;
         return (
-          <div className="py-10">
-            <div className="flex items-baseline justify-between gap-4">
-              <p className="font-display text-heading">Uploading video</p>
-              <span className="tnum font-display text-heading text-ink">{percent}%</span>
+          <div className="py-8">
+            <div className="flex items-center gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-well text-ink">
+                <IconUpload size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-4">
+                  <p className="font-display text-heading">Uploading video</p>
+                  <span className="tnum font-display text-heading text-ink">{percent}%</span>
+                </div>
+              </div>
             </div>
             <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-well-deep">
               <div
@@ -213,12 +236,19 @@ export function UploadPanel({
       })()}
 
       {stage === 'processing' && (
-        <div className="py-10">
-          <p className="font-display text-heading">Quality assessment in progress</p>
-          <p className="mt-1 text-cell font-medium text-ink-400">
-            Grounding the walkaround against the BMW inspection rubric.
-          </p>
-          <ol className="mt-6 space-y-3.5">
+        <div className="py-8">
+          <div className="flex items-center gap-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-well text-ink">
+              <IconDocument size={18} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-heading">Quality assessment in progress</p>
+              <p className="mt-0.5 text-cell font-medium text-ink-400">
+                Grounding the walkaround against the BMW inspection rubric.
+              </p>
+            </div>
+          </div>
+          <ol className="mt-6 space-y-3.5 border-t border-line pt-6">
             {ANALYSIS_STEPS.map((step, index) => {
               const done = index < activeStep;
               const active = index === activeStep;

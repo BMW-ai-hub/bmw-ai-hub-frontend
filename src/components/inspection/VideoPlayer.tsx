@@ -8,10 +8,14 @@ export interface VideoPlayerHandle {
 
 interface VideoPlayerProps {
   src: string;
+  /** Fires on the native `timeupdate` event (~4x/sec while playing) so a
+   * parent can track which chapter is currently playing and keep its
+   * highlight live, not just on click/seek. */
+  onTimeUpdate?: (seconds: number) => void;
 }
 
 export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(function VideoPlayer(
-  { src },
+  { src, onTimeUpdate },
   ref,
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -51,6 +55,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           controls
           preload="metadata"
           onError={() => setFailed(true)}
+          onTimeUpdate={(event) => onTimeUpdate?.(event.currentTarget.currentTime)}
+          onSeeked={(event) => onTimeUpdate?.(event.currentTarget.currentTime)}
           className="aspect-video w-full bg-ink"
         >
           Your browser does not support video playback.

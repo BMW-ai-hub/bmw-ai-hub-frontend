@@ -260,6 +260,12 @@ export function GradingBreakdown({
   const [tab, setTab] = useState<Tab>('overview');
   const [expandedCriteria, setExpandedCriteria] = useState<Record<string, boolean>>({});
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  // Tracks playback position live (via VideoPlayer's onTimeUpdate) so the
+  // chapter list can highlight whichever chapter is actually playing right
+  // now, not just the last one clicked. Null until the player reports a
+  // first timestamp, so a manual click/evidence-jump still controls the
+  // highlight before playback has started.
+  const [playingTime, setPlayingTime] = useState<number | null>(null);
   const playerRef = useRef<VideoPlayerHandle>(null);
 
   useEffect(() => {
@@ -318,6 +324,17 @@ export function GradingBreakdown({
       }))
     : VIDEO_CHAPTERS;
   const chaptersById = Object.fromEntries(chapters.map((chapter) => [chapter.id, chapter]));
+  // Whichever chapter is playing right now, live — falls back to the last
+  // clicked/jumped-to chapter until the player reports its first
+  // timestamp. Chapters are contiguous with no gaps (see /transcribe's
+  // prompt), so "first chapter whose end hasn't passed yet" is the one
+  // currently playing; past the last chapter's end (e.g. at the very
+  // final frame) it stays pinned to the last chapter instead of going dark.
+  const playingChapterId =
+    playingTime == null
+      ? null
+      : (chapters.find((chapter) => playingTime < chapter.end) ?? chapters[chapters.length - 1])?.id ?? null;
+  const activeChapterId = playingChapterId ?? selectedChapterId;
   // Old/seed data can carry a non-null but unusable storage_url (a bare
   // relative path with no real file behind it, e.g. from seed.sql fixtures
   // that predate the real grading pipeline) — `??` alone doesn't catch that,
@@ -572,7 +589,7 @@ export function GradingBreakdown({
       {tab === 'breakdown' && (
         <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">
           <div className="space-y-3 xl:sticky xl:top-6">
-            <VideoPlayer ref={playerRef} src={videoUrl} />
+            <VideoPlayer ref={playerRef} src={videoUrl} onTimeUpdate={setPlayingTime} />
             {!hasRealChapters && (
               <p className="text-cell leading-relaxed text-ink-400">
                 Preview clip — will play the technician's actual upload once this video has been
@@ -589,7 +606,7 @@ export function GradingBreakdown({
             />
             <ol className="divide-y divide-line">
               {chapters.map((chapter) => {
-                const selected = chapter.id === selectedChapterId;
+                const selected = chapter.id === activeChapterId;
                 const chapterImprovements = improvementsByChapter.get(chapter.id) ?? [];
                 return (
                   <li key={chapter.id} id={`chapter-${chapter.id}`}>
