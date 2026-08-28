@@ -2,7 +2,7 @@ import type { Config, Inspection, PersonalAnalytics, Score, TeamAnalytics, User,
 import { mock } from "./mockApi";
 
 const API_BASE = (import.meta.env.PROD
-  ? "https://bmw-ai-hub-backend.vercel.app/api/v1"
+  ? "https://api-gateway-production-a646.up.railway.app/api/v1"
   : import.meta.env.VITE_API_BASE_URL ?? "/api/v1"
 ).replace(/\/$/, "");
 const ACCESS = "bmw_access_token";
