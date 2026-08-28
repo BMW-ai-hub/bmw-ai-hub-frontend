@@ -521,15 +521,21 @@ export function GradingBreakdown({
                   value: hasRealChapters ? 'Complete' : VIDEO_ANALYSIS_SUMMARY.analysisStatus,
                 },
                 {
+                  // Derived straight from score.criteria's real pass/fail —
+                  // unlike "Analysis" above, this has nothing to do with
+                  // whether chapters came back. Gating it on hasRealChapters
+                  // used to mean a genuinely graded video with (rare, but
+                  // real) empty chapters silently showed hardcoded demo
+                  // placeholder numbers here while every other number on
+                  // the page was real, which read as a contradiction (e.g.
+                  // "5 strengths" next to a 33% fail).
                   label: 'Strengths',
-                  value: hasRealChapters ? passedCount : VIDEO_ANALYSIS_SUMMARY.strengths,
+                  value: passedCount,
                   tone: 'text-pass',
                 },
                 {
                   label: 'Areas to improve',
-                  value: hasRealChapters
-                    ? score.criteria.length - passedCount
-                    : VIDEO_ANALYSIS_SUMMARY.areasToImprove,
+                  value: score.criteria.length - passedCount,
                   tone: 'text-fail',
                 },
               ]}
@@ -646,7 +652,7 @@ export function GradingBreakdown({
                       onClick={() => jumpToChapter(chapter.id)}
                       className={`group relative flex w-full items-start gap-4 px-6 py-6 text-left transition-all duration-200 ease-swift ${
                         selected
-                          ? 'z-10 scale-[1.015] bg-well shadow-[0_0_0_1.5px_var(--color-ink),0_8px_24px_-8px_rgba(20,20,22,0.28)]'
+                          ? 'z-10 scale-[1.015] bg-well shadow-[0_10px_28px_-6px_rgba(20,20,22,0.32),0_2px_10px_-2px_rgba(20,20,22,0.22)]'
                           : 'hover:bg-zebra hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
                       }`}
                     >
