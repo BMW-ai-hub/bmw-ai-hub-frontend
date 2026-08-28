@@ -52,7 +52,7 @@ const SUPPORT = [
 function BrandMark({ open, dealership }: { open: boolean; dealership: string }) {
   return (
     <div className={`flex ${open ? 'items-center gap-3' : 'justify-center'}`}>
-      <BmwLogo className="h-10 w-10 shrink-0" />
+      <BmwLogo className="h-14 w-14 shrink-0 object-contain" />
       {open && (
         <span className="text-micro font-semibold tracking-[0.06em] text-ink-400">
           {dealership}
