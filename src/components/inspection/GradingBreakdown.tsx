@@ -267,6 +267,10 @@ export function GradingBreakdown({
   // highlight before playback has started.
   const [playingTime, setPlayingTime] = useState<number | null>(null);
   const playerRef = useRef<VideoPlayerHandle>(null);
+  // Follows the active chapter row as playback moves further down the
+  // list, so the highlighted timestamp never scrolls out of view on its
+  // own — same element a manual click/evidence-jump also scrolls to.
+  const activeChapterRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     setScore(undefined);
@@ -295,6 +299,47 @@ export function GradingBreakdown({
       );
   }, [inspectionId, videoId]);
 
+  // Real chapters (from ai-services, via the score response) win when
+  // present. The demo set is only a fallback — an old video graded before
+  // this landed, a video that failed AI grading, or the offline/mock build.
+  // Computed ahead of the loading-state early return (rather than after it,
+  // where this used to live) so the auto-scroll effect below it can depend
+  // on activeChapterId without breaking the rule that hooks can't follow a
+  // conditional return.
+  const hasRealChapters = Boolean(score?.chapters && score.chapters.length > 0);
+  const chapters: DisplayChapter[] = !score
+    ? []
+    : hasRealChapters
+      ? score.chapters!.map((c) => ({
+          id: c.id,
+          start: c.start_seconds,
+          end: c.end_seconds,
+          timeLabel: `${timeLabel(c.start_seconds)}–${timeLabel(c.end_seconds)}`,
+          title: c.title,
+          description: c.description ?? '',
+        }))
+      : VIDEO_CHAPTERS;
+  // Whichever chapter is playing right now, live — falls back to the last
+  // clicked/jumped-to chapter until the player reports its first
+  // timestamp. Chapters are contiguous with no gaps (see /transcribe's
+  // prompt), so "first chapter whose end hasn't passed yet" is the one
+  // currently playing; past the last chapter's end (e.g. at the very
+  // final frame) it stays pinned to the last chapter instead of going dark.
+  const playingChapterId =
+    playingTime == null
+      ? null
+      : (chapters.find((chapter) => playingTime < chapter.end) ?? chapters[chapters.length - 1])?.id ?? null;
+  const activeChapterId = playingChapterId ?? selectedChapterId;
+
+  // Keeps the highlighted chapter in view as playback moves further down
+  // the list — only re-fires when the active chapter actually changes, not
+  // on every timeupdate tick, so it never fights a viewer trying to scroll
+  // and read something else while the video keeps playing.
+  useEffect(() => {
+    if (!activeChapterId) return;
+    activeChapterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [activeChapterId]);
+
   if (!score || !inspection) {
     return (
       <Panel>
@@ -309,32 +354,7 @@ export function GradingBreakdown({
   const passing = score.overall_score >= score.threshold_percent;
   const passedCount = score.criteria.filter((criterion) => criterion.passed).length;
 
-  // Real chapters (from ai-services, via the score response) win when
-  // present. The demo set is only a fallback — an old video graded before
-  // this landed, a video that failed AI grading, or the offline/mock build.
-  const hasRealChapters = Boolean(score.chapters && score.chapters.length > 0);
-  const chapters: DisplayChapter[] = hasRealChapters
-    ? score.chapters!.map((c) => ({
-        id: c.id,
-        start: c.start_seconds,
-        end: c.end_seconds,
-        timeLabel: `${timeLabel(c.start_seconds)}–${timeLabel(c.end_seconds)}`,
-        title: c.title,
-        description: c.description ?? '',
-      }))
-    : VIDEO_CHAPTERS;
   const chaptersById = Object.fromEntries(chapters.map((chapter) => [chapter.id, chapter]));
-  // Whichever chapter is playing right now, live — falls back to the last
-  // clicked/jumped-to chapter until the player reports its first
-  // timestamp. Chapters are contiguous with no gaps (see /transcribe's
-  // prompt), so "first chapter whose end hasn't passed yet" is the one
-  // currently playing; past the last chapter's end (e.g. at the very
-  // final frame) it stays pinned to the last chapter instead of going dark.
-  const playingChapterId =
-    playingTime == null
-      ? null
-      : (chapters.find((chapter) => playingTime < chapter.end) ?? chapters[chapters.length - 1])?.id ?? null;
-  const activeChapterId = playingChapterId ?? selectedChapterId;
   // Old/seed data can carry a non-null but unusable storage_url (a bare
   // relative path with no real file behind it, e.g. from seed.sql fixtures
   // that predate the real grading pipeline) — `??` alone doesn't catch that,
@@ -607,26 +627,47 @@ export function GradingBreakdown({
             <ol className="divide-y divide-line">
               {chapters.map((chapter) => {
                 const selected = chapter.id === activeChapterId;
+                // Distinguishes "this is playing right now" from "this was
+                // last clicked" — only the former gets the live pulse; a
+                // manually-selected-but-paused chapter still gets the
+                // glow/highlight treatment, just without the "it's moving"
+                // cue.
+                const isLive = selected && chapter.id === playingChapterId;
                 const chapterImprovements = improvementsByChapter.get(chapter.id) ?? [];
                 return (
-                  <li key={chapter.id} id={`chapter-${chapter.id}`}>
+                  <li
+                    key={chapter.id}
+                    id={`chapter-${chapter.id}`}
+                    ref={selected ? activeChapterRef : undefined}
+                  >
                     <button
                       type="button"
                       aria-current={selected || undefined}
                       onClick={() => jumpToChapter(chapter.id)}
-                      className={`flex w-full items-start gap-4 px-6 py-5 text-left transition-colors duration-[120ms] ease-swift ${
-                        selected ? 'bg-well' : 'hover:bg-zebra'
+                      className={`group relative flex w-full items-start gap-4 px-6 py-6 text-left transition-all duration-200 ease-swift ${
+                        selected
+                          ? 'z-10 scale-[1.015] bg-well shadow-[0_0_0_1.5px_var(--color-ink),0_8px_24px_-8px_rgba(20,20,22,0.28)]'
+                          : 'hover:bg-zebra hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
                       }`}
                     >
                       {/* A small dot instead of a bordered badge for each mark
-                          — reads as a timeline, not another row of chips. */}
+                          — reads as a timeline, not another row of chips. The
+                          active one glows and pulses while actually playing. */}
+                      <span aria-hidden="true" className="relative mt-2 flex size-2.5 shrink-0 items-center justify-center">
+                        {isLive && (
+                          <span className="absolute size-2.5 animate-ping rounded-full bg-ink/40" />
+                        )}
+                        <span
+                          className={`relative size-2.5 rounded-full transition-colors duration-200 ${
+                            selected ? 'bg-ink shadow-[0_0_8px_var(--color-ink)]' : 'bg-ink-300 group-hover:bg-ink-400'
+                          }`}
+                        />
+                      </span>
                       <span
-                        aria-hidden="true"
-                        className={`mt-2 size-2.5 shrink-0 rounded-full ${
-                          selected ? 'bg-ink' : 'bg-ink-300'
+                        className={`tnum w-20 shrink-0 pt-0.5 font-display text-cell font-bold transition-colors duration-200 ${
+                          selected ? 'text-ink' : 'text-ink-400'
                         }`}
-                      />
-                      <span className="tnum w-20 shrink-0 pt-0.5 font-display text-cell font-bold text-ink-400">
+                      >
                         {chapter.timeLabel}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -640,6 +681,12 @@ export function GradingBreakdown({
                           </p>
                         )}
                       </div>
+                      {isLive && (
+                        <span className="mt-1 flex shrink-0 items-center gap-1.5 text-micro font-bold tracking-[0.08em] text-ink uppercase">
+                          <span className="size-1.5 animate-pulse rounded-full bg-ink" />
+                          Playing
+                        </span>
+                      )}
                     </button>
 
                     {/* Improvement notes merged in at the timestamp they apply
