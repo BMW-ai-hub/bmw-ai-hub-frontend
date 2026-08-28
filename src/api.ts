@@ -1,10 +1,10 @@
 import type { Config, Inspection, PersonalAnalytics, Score, TeamAnalytics, User, Video } from "./types";
 import { mock } from "./mockApi";
 
-const DEFAULT_API_BASE = import.meta.env.PROD
+const API_BASE = (import.meta.env.PROD
   ? "https://bmw-ai-hub-backend.vercel.app/api/v1"
-  : "/api/v1";
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE).replace(/\/$/, "");
+  : import.meta.env.VITE_API_BASE_URL ?? "/api/v1"
+).replace(/\/$/, "");
 const ACCESS = "bmw_access_token";
 const REFRESH = "bmw_refresh_token";
 
